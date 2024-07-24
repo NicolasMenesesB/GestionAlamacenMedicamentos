@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "sBViAsE1uM/7gCRy9xrHRu/iCrnaW5QCssh7isJQ0HI=",
+  "Source": "API_GestionAlmacenMedicamentos",
+  "BasePath": "_content/API_GestionAlmacenMedicamentos",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
