@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using API_GestionAlmacenMedicamentos.Data;
 using API_GestionAlmacenMedicamentos.Models;
+using API_GestionAlmacenMedicamentos.DTOs.ShelfDTOs;
+using System.Data.SqlTypes;
+using System.Security.Claims;
 
 namespace API_GestionAlmacenMedicamentos.Controllers
 {
@@ -23,86 +26,153 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
         // GET: api/Shelves
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Shelf>>> GetShelves()
+        public async Task<ActionResult<IEnumerable<ShelfDTO>>> GetShelves()
         {
-            return await _context.Shelves.ToListAsync();
+            return await _context.Shelves
+                 .Where(s => s.IsDeleted == "0")
+                 .Select(s => new ShelfDTO
+                 {
+                     ShelfId = s.ShelfId,
+                     NameShelf = s.NameShelf,
+                     WarehouseId = s.WarehouseId
+                 })
+                 .ToListAsync();
         }
 
         // GET: api/Shelves/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Shelf>> GetShelf(int id)
+        public async Task<ActionResult<ShelfDTO>> GetShelf(int id)
         {
             var shelf = await _context.Shelves.FindAsync(id);
 
-            if (shelf == null)
+            if (shelf == null || shelf.IsDeleted == "1")
             {
                 return NotFound();
             }
 
-            return shelf;
+            var shelfDTO = new ShelfDTO
+            {
+                ShelfId = shelf.ShelfId,
+                NameShelf = shelf.NameShelf,
+                WarehouseId = shelf.WarehouseId
+            };
+
+            return shelfDTO;
         }
 
-        // PUT: api/Shelves/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutShelf(int id, Shelf shelf)
+        [HttpPost]
+        public async Task<ActionResult<ShelfDTO>> PostShelf([FromBody] CreateShelfDTO createShelfDTO)
         {
-            if (id != shelf.ShelfId)
+            if (!ModelState.IsValid)
             {
-                return BadRequest();
+                return BadRequest(ModelState);
             }
-
-            _context.Entry(shelf).State = EntityState.Modified;
 
             try
             {
+                var userId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+
+                var shelf = new Shelf
+                {
+                    NameShelf = createShelfDTO.NameShelf,
+                    WarehouseId = createShelfDTO.WarehouseId,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = userId,
+                    IsDeleted = "0"
+                };
+
+                _context.Shelves.Add(shelf);
                 await _context.SaveChangesAsync();
+
+                var shelfDTO = new ShelfDTO
+                {
+                    ShelfId = shelf.ShelfId,
+                    NameShelf = shelf.NameShelf,
+                    WarehouseId = shelf.WarehouseId
+                };
+
+                return CreatedAtAction("GetShelf", new { id = shelf.ShelfId }, shelfDTO);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!ShelfExists(id))
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al crear el estante: {ex.Message} - {ex.InnerException?.Message}");
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutShelf(int id, [FromBody] UpdateShelfDTO updateShelfDTO)
+        {
+            try
+            {
+                var shelf = await _context.Shelves.FindAsync(id);
+
+                if (shelf == null || shelf.IsDeleted == "1")
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+
+                var userId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+
+                shelf.NameShelf = updateShelfDTO.NameShelf;
+                shelf.WarehouseId = updateShelfDTO.WarehouseId;
+                shelf.UpdatedAt = DateTime.UtcNow;
+                shelf.UpdatedBy = userId;
+
+                _context.Entry(shelf).State = EntityState.Modified;
+
+                await _context.SaveChangesAsync();
+
+                return NoContent();
             }
-
-            return NoContent();
+            catch (DbUpdateConcurrencyException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error de concurrencia al actualizar el estante: {ex.Message}");
+            }
+            catch (SqlTypeException ex)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, $"Error de tipo SQL al actualizar el estante: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error interno al actualizar el estante: {ex.Message} - {ex.InnerException?.Message}");
+            }
         }
 
-        // POST: api/Shelves
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Shelf>> PostShelf(Shelf shelf)
-        {
-            _context.Shelves.Add(shelf);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetShelf", new { id = shelf.ShelfId }, shelf);
-        }
-
-        // DELETE: api/Shelves/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteShelf(int id)
         {
-            var shelf = await _context.Shelves.FindAsync(id);
-            if (shelf == null)
+            try
             {
-                return NotFound();
+                var shelf = await _context.Shelves.FindAsync(id);
+                if (shelf == null)
+                {
+                    return NotFound();
+                }
+
+                shelf.IsDeleted = "1";
+                shelf.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return NoContent();
             }
-
-            _context.Shelves.Remove(shelf);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch (DbUpdateConcurrencyException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error de concurrencia al eliminar el estante: {ex.Message}");
+            }
+            catch (SqlTypeException ex)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, $"Error de tipo SQL al eliminar el estante: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error interno al eliminar el estante: {ex.Message} - {ex.InnerException?.Message}");
+            }
         }
 
         private bool ShelfExists(int id)
         {
-            return _context.Shelves.Any(e => e.ShelfId == id);
+            return _context.Shelves.Any(e => e.ShelfId == id && e.IsDeleted == "0");
         }
     }
 }

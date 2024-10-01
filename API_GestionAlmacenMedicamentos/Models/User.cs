@@ -1,27 +1,41 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
-namespace API_GestionAlmacenMedicamentos.Models;
-
-public partial class User
+namespace API_GestionAlmacenMedicamentos.Models
 {
-    public int UserId { get; set; }
+    public partial class User
+    {
+        [Key]
+        public int UserId { get; set; }
 
-    public string UserName { get; set; } = null!;
+        [Required]
+        [StringLength(50)]
+        public string UserName { get; set; } = null!;
 
-    public string Password { get; set; } = null!;
+        [Required]
+        [StringLength(int.MaxValue)]
+        public string Password { get; set; } = null!;
 
-    public string Role { get; set; } = null!;
+        [Required]
+        [StringLength(50)]
+        public string Role { get; set; } = null!;
 
-    public DateTime CreatedAt { get; set; }
+        [JsonIgnore]
+        public DateTime CreatedAt { get; set; }
 
-    public DateTime? UpdatedAt { get; set; }
+        [JsonIgnore]
+        public DateTime? UpdatedAt { get; set; }
 
-    public int CreatedBy { get; set; }
+        [JsonIgnore]
+        public int CreatedBy { get; set; }
 
-    public int? UpdatedBy { get; set; }
+        [JsonIgnore]
+        public int? UpdatedBy { get; set; }
 
-    public string IsDeleted { get; set; } = null!;
-
-    public virtual Person UserNavigation { get; set; } = null!;
+        [JsonIgnore]
+        [StringLength(1)]
+        public string IsDeleted { get; set; } = "0";
+    }
 }

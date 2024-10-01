@@ -1,43 +1,69 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
-namespace API_GestionAlmacenMedicamentos.Models;
-
-public partial class Person
+namespace API_GestionAlmacenMedicamentos.Models
 {
-    public int PersonId { get; set; }
+    public partial class Person
+    {
+        [Key]
+        public int PersonId { get; set; }
 
-    public string Names { get; set; } = null!;
+        [Required]
+        [StringLength(100)]
+        public string Names { get; set; } = null!;
 
-    public string LastName { get; set; } = null!;
+        [Required]
+        [StringLength(100)]
+        public string LastName { get; set; } = null!;
 
-    public string? SecondLastName { get; set; }
+        [StringLength(100)]
+        public string? SecondLastName { get; set; }
 
-    public string? PhoneNumber { get; set; }
+        [StringLength(15)]
+        public string? PhoneNumber { get; set; }
 
-    public string CellPhoneNumber { get; set; } = null!;
+        [Required]
+        [StringLength(15)]
+        public string CellPhoneNumber { get; set; } = null!;
 
-    public string Photo { get; set; } = null!;
+        [StringLength(int.MaxValue)]
+        public string? Photo { get; set; }
 
-    public string Gender { get; set; } = null!;
+        [Required]
+        [StringLength(1)]
+        public string Gender { get; set; } = null!;
 
-    public DateOnly Birthdate { get; set; }
+        [Required]
+        public DateTime Birthdate { get; set; }
 
-    public string Address { get; set; } = null!;
+        [Required]
+        [StringLength(150)]
+        public string Address { get; set; } = null!;
 
-    public string Ci { get; set; } = null!;
+        [Required]
+        [StringLength(20)]
+        public string Ci { get; set; } = null!;
 
-    public string Email { get; set; } = null!;
+        [Required]
+        [StringLength(150)]
+        public string Email { get; set; } = null!;
 
-    public DateTime CreatedAt { get; set; }
+        [JsonIgnore]
+        public DateTime CreatedAt { get; set; }
 
-    public DateTime? UpdatedAt { get; set; }
+        [JsonIgnore]
+        public DateTime? UpdatedAt { get; set; }
 
-    public int CreatedBy { get; set; }
+        [JsonIgnore]
+        public int CreatedBy { get; set; }
 
-    public int? UpdatedBy { get; set; }
+        [JsonIgnore]
+        public int? UpdatedBy { get; set; }
 
-    public string IsDeleted { get; set; } = null!;
-
-    public virtual User? User { get; set; }
+        [StringLength(1)]
+        [JsonIgnore]
+        public string IsDeleted { get; set; } = "0";
+    }
 }

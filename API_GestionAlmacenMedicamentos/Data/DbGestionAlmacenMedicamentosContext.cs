@@ -492,11 +492,6 @@ public partial class DbGestionAlmacenMedicamentosContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("userName");
-
-            entity.HasOne(d => d.UserNavigation).WithOne(p => p.User)
-                .HasForeignKey<User>(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_User_Person1");
         });
 
         modelBuilder.Entity<Warehouse>(entity =>

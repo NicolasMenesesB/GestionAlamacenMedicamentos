@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using API_GestionAlmacenMedicamentos.Data;
+using API_GestionAlmacenMedicamentos.DTOs.DetailMedicationHandlingUnitDTOs;
+using API_GestionAlmacenMedicamentos.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using API_GestionAlmacenMedicamentos.Data;
-using API_GestionAlmacenMedicamentos.Models;
 
 namespace API_GestionAlmacenMedicamentos.Controllers
 {
@@ -23,65 +19,73 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
         // GET: api/DetailMedicationHandlingUnits
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<DetailMedicationHandlingUnit>>> GetDetailMedicationHandlingUnits()
+        public async Task<ActionResult<IEnumerable<DetailMedicationHandlingUnitDTO>>> GetDetailMedicationHandlingUnits()
         {
-            return await _context.DetailMedicationHandlingUnits.ToListAsync();
+            return await _context.DetailMedicationHandlingUnits
+                .Where(d => d.IsDeleted == "0")
+                .Select(d => new DetailMedicationHandlingUnitDTO
+                {
+                    DetailMedicationHandlingUnitId = d.DetailMedicationHandlingUnitId,
+                    StorageColdChain = d.StorageColdChain,
+                    PhotoSensitiveStorage = d.PhotoSensitiveStorage,
+                    Controlled = d.Controlled,
+                    Oncological = d.Oncological
+                })
+                .ToListAsync();
         }
 
-        // GET: api/DetailMedicationHandlingUnits/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<DetailMedicationHandlingUnit>> GetDetailMedicationHandlingUnit(int id)
+        // POST: api/DetailMedicationHandlingUnits
+        [HttpPost]
+        public async Task<ActionResult<DetailMedicationHandlingUnitDTO>> PostDetailMedicationHandlingUnit(CreateDetailMedicationHandlingUnitDTO createDTO)
+        {
+            var detailMedicationHandlingUnit = new DetailMedicationHandlingUnit
+            {
+                StorageColdChain = createDTO.StorageColdChain,
+                PhotoSensitiveStorage = createDTO.PhotoSensitiveStorage,
+                Controlled = createDTO.Controlled,
+                Oncological = createDTO.Oncological,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = 1,
+                IsDeleted = "0"
+            };
+
+            _context.DetailMedicationHandlingUnits.Add(detailMedicationHandlingUnit);
+            await _context.SaveChangesAsync();
+
+            var detailMedicationHandlingUnitDTO = new DetailMedicationHandlingUnitDTO
+            {
+                DetailMedicationHandlingUnitId = detailMedicationHandlingUnit.DetailMedicationHandlingUnitId,
+                StorageColdChain = detailMedicationHandlingUnit.StorageColdChain,
+                PhotoSensitiveStorage = detailMedicationHandlingUnit.PhotoSensitiveStorage,
+                Controlled = detailMedicationHandlingUnit.Controlled,
+                Oncological = detailMedicationHandlingUnit.Oncological
+            };
+
+            return CreatedAtAction(nameof(GetDetailMedicationHandlingUnits), new { id = detailMedicationHandlingUnit.DetailMedicationHandlingUnitId }, detailMedicationHandlingUnitDTO);
+        }
+
+        // PUT: api/DetailMedicationHandlingUnits/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutDetailMedicationHandlingUnit(int id, UpdateDetailMedicationHandlingUnitDTO updateDTO)
         {
             var detailMedicationHandlingUnit = await _context.DetailMedicationHandlingUnits.FindAsync(id);
 
-            if (detailMedicationHandlingUnit == null)
+            if (detailMedicationHandlingUnit == null || detailMedicationHandlingUnit.IsDeleted == "1")
             {
                 return NotFound();
             }
 
-            return detailMedicationHandlingUnit;
-        }
-
-        // PUT: api/DetailMedicationHandlingUnits/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutDetailMedicationHandlingUnit(int id, DetailMedicationHandlingUnit detailMedicationHandlingUnit)
-        {
-            if (id != detailMedicationHandlingUnit.DetailMedicationHandlingUnitId)
-            {
-                return BadRequest();
-            }
+            detailMedicationHandlingUnit.StorageColdChain = updateDTO.StorageColdChain;
+            detailMedicationHandlingUnit.PhotoSensitiveStorage = updateDTO.PhotoSensitiveStorage;
+            detailMedicationHandlingUnit.Controlled = updateDTO.Controlled;
+            detailMedicationHandlingUnit.Oncological = updateDTO.Oncological;
+            detailMedicationHandlingUnit.UpdatedAt = DateTime.UtcNow;
+            detailMedicationHandlingUnit.UpdatedBy = 1;
 
             _context.Entry(detailMedicationHandlingUnit).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!DetailMedicationHandlingUnitExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/DetailMedicationHandlingUnits
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<DetailMedicationHandlingUnit>> PostDetailMedicationHandlingUnit(DetailMedicationHandlingUnit detailMedicationHandlingUnit)
-        {
-            _context.DetailMedicationHandlingUnits.Add(detailMedicationHandlingUnit);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetDetailMedicationHandlingUnit", new { id = detailMedicationHandlingUnit.DetailMedicationHandlingUnitId }, detailMedicationHandlingUnit);
+            return NoContent();
         }
 
         // DELETE: api/DetailMedicationHandlingUnits/5
@@ -94,15 +98,10 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 return NotFound();
             }
 
-            _context.DetailMedicationHandlingUnits.Remove(detailMedicationHandlingUnit);
+            detailMedicationHandlingUnit.IsDeleted = "1";
             await _context.SaveChangesAsync();
 
             return NoContent();
-        }
-
-        private bool DetailMedicationHandlingUnitExists(int id)
-        {
-            return _context.DetailMedicationHandlingUnits.Any(e => e.DetailMedicationHandlingUnitId == id);
         }
     }
 }

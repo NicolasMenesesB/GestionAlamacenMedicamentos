@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using API_GestionAlmacenMedicamentos.Data;
 using API_GestionAlmacenMedicamentos.Models;
+using API_GestionAlmacenMedicamentos.DTOs.ReportDTOs;
+using System.Data.SqlTypes;
+using System.Security.Claims;
 
 namespace API_GestionAlmacenMedicamentos.Controllers
 {
@@ -23,86 +26,153 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
         // GET: api/Reports
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Report>>> GetReports()
+        public async Task<ActionResult<IEnumerable<ReportDTO>>> GetReports()
         {
-            return await _context.Reports.ToListAsync();
+            return await _context.Reports
+                 .Where(r => r.IsDeleted == "0")
+                 .Select(r => new ReportDTO
+                 {
+                     ReportId = r.ReportId,
+                     ReportName = r.ReportName,
+                     Description = r.Description
+                 })
+                 .ToListAsync();
         }
 
         // GET: api/Reports/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Report>> GetReport(int id)
+        public async Task<ActionResult<ReportDTO>> GetReport(int id)
         {
             var report = await _context.Reports.FindAsync(id);
 
-            if (report == null)
+            if (report == null || report.IsDeleted == "1")
             {
                 return NotFound();
             }
 
-            return report;
+            var reportDTO = new ReportDTO
+            {
+                ReportId = report.ReportId,
+                ReportName = report.ReportName,
+                Description = report.Description
+            };
+
+            return reportDTO;
         }
 
-        // PUT: api/Reports/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutReport(int id, Report report)
+        [HttpPost]
+        public async Task<ActionResult<ReportDTO>> PostReport([FromBody] CreateReportDTO createReportDTO)
         {
-            if (id != report.ReportId)
+            if (!ModelState.IsValid)
             {
-                return BadRequest();
+                return BadRequest(ModelState);
             }
-
-            _context.Entry(report).State = EntityState.Modified;
 
             try
             {
+                var userId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+
+                var report = new Report
+                {
+                    ReportName = createReportDTO.ReportName,
+                    Description = createReportDTO.Description,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = userId,
+                    IsDeleted = "0"
+                };
+
+                _context.Reports.Add(report);
                 await _context.SaveChangesAsync();
+
+                var reportDTO = new ReportDTO
+                {
+                    ReportId = report.ReportId,
+                    ReportName = report.ReportName,
+                    Description = report.Description
+                };
+
+                return CreatedAtAction("GetReport", new { id = report.ReportId }, reportDTO);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!ReportExists(id))
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al crear el reporte: {ex.Message} - {ex.InnerException?.Message}");
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutReport(int id, [FromBody] UpdateReportDTO updateReportDTO)
+        {
+            try
+            {
+                var report = await _context.Reports.FindAsync(id);
+
+                if (report == null || report.IsDeleted == "1")
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+
+                var userId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+
+                report.ReportName = updateReportDTO.ReportName;
+                report.Description = updateReportDTO.Description;
+                report.UpdatedAt = DateTime.UtcNow;
+                report.UpdatedBy = userId;
+
+                _context.Entry(report).State = EntityState.Modified;
+
+                await _context.SaveChangesAsync();
+
+                return NoContent();
             }
-
-            return NoContent();
+            catch (DbUpdateConcurrencyException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error de concurrencia al actualizar el reporte: {ex.Message}");
+            }
+            catch (SqlTypeException ex)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, $"Error de tipo SQL al actualizar el reporte: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error interno al actualizar el reporte: {ex.Message} - {ex.InnerException?.Message}");
+            }
         }
 
-        // POST: api/Reports
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Report>> PostReport(Report report)
-        {
-            _context.Reports.Add(report);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetReport", new { id = report.ReportId }, report);
-        }
-
-        // DELETE: api/Reports/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteReport(int id)
         {
-            var report = await _context.Reports.FindAsync(id);
-            if (report == null)
+            try
             {
-                return NotFound();
+                var report = await _context.Reports.FindAsync(id);
+                if (report == null)
+                {
+                    return NotFound();
+                }
+
+                report.IsDeleted = "1";
+                report.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return NoContent();
             }
-
-            _context.Reports.Remove(report);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch (DbUpdateConcurrencyException ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error de concurrencia al eliminar el reporte: {ex.Message}");
+            }
+            catch (SqlTypeException ex)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, $"Error de tipo SQL al eliminar el reporte: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error interno al eliminar el reporte: {ex.Message} - {ex.InnerException?.Message}");
+            }
         }
 
         private bool ReportExists(int id)
         {
-            return _context.Reports.Any(e => e.ReportId == id);
+            return _context.Reports.Any(e => e.ReportId == id && e.IsDeleted == "0");
         }
     }
 }
