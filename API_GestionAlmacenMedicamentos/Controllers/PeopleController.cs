@@ -11,9 +11,11 @@ using API_GestionAlmacenMedicamentos.DTOs;
 using BCrypt.Net;
 using System.Data.SqlTypes;
 using API_GestionAlmacenMedicamentos.DTOs.PersonDTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace API_GestionAlmacenMedicamentos.Controllers
 {
+    [Authorize] 
     [Route("api/[controller]")]
     [ApiController]
     public class PeopleController : ControllerBase

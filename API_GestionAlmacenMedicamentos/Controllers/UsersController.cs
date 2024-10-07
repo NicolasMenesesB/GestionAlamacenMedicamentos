@@ -8,9 +8,11 @@ using Microsoft.EntityFrameworkCore;
 using API_GestionAlmacenMedicamentos.Data;
 using API_GestionAlmacenMedicamentos.Models;
 using API_GestionAlmacenMedicamentos.DTOs.UserDTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace API_GestionAlmacenMedicamentos.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class UsersController : ControllerBase

@@ -9,9 +9,11 @@ using API_GestionAlmacenMedicamentos.Data;
 using API_GestionAlmacenMedicamentos.Models;
 using API_GestionAlmacenMedicamentos.DTOs.TypeOfMovementDTOs;
 using System.Data.SqlTypes;
+using Microsoft.AspNetCore.Authorization;
 
 namespace API_GestionAlmacenMedicamentos.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class TypeOfMovementsController : ControllerBase

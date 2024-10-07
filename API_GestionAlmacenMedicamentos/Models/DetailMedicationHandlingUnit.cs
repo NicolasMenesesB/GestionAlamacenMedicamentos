@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace API_GestionAlmacenMedicamentos.Models;
 
@@ -25,5 +26,6 @@ public partial class DetailMedicationHandlingUnit
 
     public string IsDeleted { get; set; } = null!;
 
+    [JsonIgnore]
     public virtual MedicationHandlingUnit DetailMedicationHandlingUnitNavigation { get; set; } = null!;
 }

@@ -10,9 +10,11 @@ using API_GestionAlmacenMedicamentos.Models;
 using API_GestionAlmacenMedicamentos.DTOs.ShelfDTOs;
 using System.Data.SqlTypes;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace API_GestionAlmacenMedicamentos.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ShelvesController : ControllerBase

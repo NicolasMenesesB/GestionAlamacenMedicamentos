@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using API_GestionAlmacenMedicamentos.Data;
 using API_GestionAlmacenMedicamentos.Models;
 using BCrypt.Net;
+using Microsoft.AspNetCore.Authorization;
 
 namespace API_GestionAlmacenMedicamentos.Controllers
 {

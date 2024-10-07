@@ -1,11 +1,13 @@
 ﻿using API_GestionAlmacenMedicamentos.Data;
 using API_GestionAlmacenMedicamentos.DTOs.DetailMedicationHandlingUnitDTOs;
 using API_GestionAlmacenMedicamentos.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace API_GestionAlmacenMedicamentos.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class DetailMedicationHandlingUnitsController : ControllerBase
