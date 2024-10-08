@@ -361,6 +361,14 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
+        [HttpGet("checkBatchCode/{batchCode}")]
+        public async Task<IActionResult> CheckBatchCodeExists(string batchCode)
+        {
+            bool exists = await _context.Batches.AnyAsync(b => b.BatchCode == batchCode && b.IsDeleted == "0");
+            return Ok(new { exists });
+        }
+
+
         private bool BatchExists(int id)
         {
             return _context.Batches.Any(e => e.BatchId == id && e.IsDeleted == "0");
