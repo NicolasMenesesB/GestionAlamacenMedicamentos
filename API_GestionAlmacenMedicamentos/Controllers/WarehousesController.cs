@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Data.SqlTypes;
+using System.Security.Claims;
 
 
 namespace API_GestionAlmacenMedicamentos.Controllers
@@ -12,6 +13,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
     [Authorize]
     [Route("api/[controller]")]
     [ApiController]
+
     public class WarehousesController : ControllerBase
     {
         private readonly DbGestionAlmacenMedicamentosContext _context;
@@ -66,15 +68,26 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 return BadRequest(ModelState);
             }
 
-            // Rescatar el ID del usuario autenticado
-            var userId = int.Parse(User.Identity.Name);
+            // Verificar si el Claim "name" existe antes de intentar obtener el userId
+            var claim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+
+            if (claim == null || string.IsNullOrEmpty(claim.Value))
+            {
+                return Unauthorized("User information is missing.");
+            }
+
+            // Obtener el userId desde el JWT
+            if (!int.TryParse(claim.Value, out var userId))
+            {
+                return Unauthorized("Invalid user information.");
+            }
 
             var warehouse = new Warehouse
             {
                 NameWarehouse = createWarehouseDTO.NameWarehouse,
                 AddressWarehouse = createWarehouseDTO.AddressWarehouse,
                 CreatedAt = DateTime.UtcNow,
-                CreatedBy = userId,  // Usar el ID del usuario autenticado
+                CreatedBy = userId,  // Asignar el ID del usuario autenticado
                 IsDeleted = "0"
             };
 
@@ -91,10 +104,12 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             return CreatedAtAction("GetWarehouse", new { id = warehouse.WarehouseId }, warehouseDTO);
         }
 
+
         // PUT: api/Warehouses/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutWarehouse(int id, [FromBody] UpdateWarehouseDTO updateWarehouseDTO)
         {
+            // Verificar si el almacén existe y no está marcado como eliminado
             var warehouse = await _context.Warehouses.FindAsync(id);
 
             if (warehouse == null || warehouse.IsDeleted == "1")
@@ -102,13 +117,25 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 return NotFound();
             }
 
-            // Rescatar el ID del usuario autenticado
-            var userId = int.Parse(User.Identity.Name);
+            // Verificar si el Claim "name" existe antes de intentar obtener el userId
+            var claim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
 
+            if (claim == null || string.IsNullOrEmpty(claim.Value))
+            {
+                return Unauthorized("User information is missing.");
+            }
+
+            // Obtener el userId desde el JWT
+            if (!int.TryParse(claim.Value, out var userId))
+            {
+                return Unauthorized("Invalid user information.");
+            }
+
+            // Actualizar los datos del almacén
             warehouse.NameWarehouse = updateWarehouseDTO.NameWarehouse;
             warehouse.AddressWarehouse = updateWarehouseDTO.AddressWarehouse;
             warehouse.UpdatedAt = DateTime.UtcNow;
-            warehouse.UpdatedBy = userId;  // Usar el ID del usuario autenticado
+            warehouse.UpdatedBy = userId;  // Asignar el ID del usuario autenticado
 
             _context.Entry(warehouse).State = EntityState.Modified;
 
@@ -131,6 +158,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
             return NoContent();
         }
+
 
         // DELETE: api/Warehouses/5
         [HttpDelete("{id}")]
@@ -163,6 +191,15 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
 
             return NoContent();
+        }
+
+        [HttpGet("CheckWarehouseExists")]
+        public IActionResult CheckWarehouseExists(string nameWarehouse)
+        {
+            var warehouseExists = _context.Warehouses
+                .Any(w => w.NameWarehouse.ToLower() == nameWarehouse.ToLower() && w.IsDeleted == "0");
+
+            return Ok(new { warehouseExists });
         }
 
         private bool WarehouseExists(int id)

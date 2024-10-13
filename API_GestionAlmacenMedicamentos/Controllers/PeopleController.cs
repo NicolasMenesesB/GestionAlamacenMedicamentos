@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.IO;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -21,10 +23,12 @@ namespace API_GestionAlmacenMedicamentos.Controllers
     public class PeopleController : ControllerBase
     {
         private readonly DbGestionAlmacenMedicamentosContext _context;
+        private readonly IWebHostEnvironment _env;
 
-        public PeopleController(DbGestionAlmacenMedicamentosContext context)
+        public PeopleController(DbGestionAlmacenMedicamentosContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
         // GET: api/People
@@ -83,13 +87,34 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
         // POST: api/People
         [HttpPost]
-        public async Task<ActionResult<PersonDTO>> PostPerson([FromBody] CreatePersonDTO createPersonDTO)
+        public async Task<ActionResult<PersonDTO>> PostPerson([FromForm] CreatePersonDTO createPersonDTO)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
+            string photoUrl = null;
+
+            // Si hay un archivo de foto, lo almacenamos en la carpeta 'Uploads'
+            if (createPersonDTO.Photo != null)
+            {
+                var uploadsFolder = Path.Combine(_env.ContentRootPath, "Uploads");
+                Directory.CreateDirectory(uploadsFolder); // Crear la carpeta si no existe
+
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + createPersonDTO.Photo.FileName;
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await createPersonDTO.Photo.CopyToAsync(fileStream);
+                }
+
+                // Guardamos la URL relativa en la base de datos
+                photoUrl = Path.Combine("Uploads", uniqueFileName);
+            }
+
+            // Crear el objeto Persona
             var person = new Person
             {
                 Names = createPersonDTO.Names,
@@ -97,43 +122,42 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 SecondLastName = createPersonDTO.SecondLastName,
                 PhoneNumber = createPersonDTO.PhoneNumber,
                 CellPhoneNumber = createPersonDTO.CellPhoneNumber,
-                Photo = createPersonDTO.Photo,
+                Photo = photoUrl,
                 Gender = createPersonDTO.Gender,
                 Birthdate = createPersonDTO.Birthdate,
                 Address = createPersonDTO.Address,
                 Ci = createPersonDTO.Ci,
                 Email = createPersonDTO.Email,
                 CreatedAt = DateTime.UtcNow,
-                CreatedBy = 1,
+                CreatedBy = 1, // Ajusta esto según tu lógica de negocio
                 IsDeleted = "0"
             };
 
-            // Agregar la persona al contexto para obtener el ID autogenerado
+            // Guardamos primero la persona
             _context.People.Add(person);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(); // Esto generará el PersonId
 
-            // Generar el UserName y la Password a partir de las reglas dadas
-            string userName = GenerateUserName(person.Names, person.LastName, person.Ci);
-            string plainPassword = GeneratePassword(person.Names, person.LastName, person.Ci);
+            // Crear el objeto Usuario utilizando el mismo ID que el PersonId
+            var userName = GenerateUserName(person.Names, person.LastName, person.Ci);
+            var password = GeneratePassword(person.Names, person.LastName, person.Ci);
+            var hashedPassword = BCrypt.Net.BCrypt.HashPassword(password); // Hashear la contraseña
 
-            // Encriptar la contraseña usando BCrypt
-            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(plainPassword);
-
-            // Crear un nuevo usuario con el ID autogenerado por la base de datos
             var user = new User
             {
+                UserId = person.PersonId,  // Aquí asignamos el PersonId como UserId
                 UserName = userName,
                 Password = hashedPassword,
-                Role = createPersonDTO.Role,
+                Role = createPersonDTO.Role, 
                 CreatedAt = DateTime.UtcNow,
-                CreatedBy = 1,
+                CreatedBy = 1, // Ajusta esto según tu lógica de negocio
                 IsDeleted = "0"
             };
 
-            // Agregar el usuario al contexto
+            // Guardamos el usuario
             _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(); // Guardar el usuario
 
+            // Devolver los detalles de la persona creada
             var personDTO = new PersonDTO
             {
                 PersonId = person.PersonId,
@@ -153,9 +177,11 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             return CreatedAtAction("GetPerson", new { id = person.PersonId }, personDTO);
         }
 
+
+
         // PUT: api/People/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutPerson(int id, [FromBody] UpdatePersonDTO updatePersonDTO)
+        public async Task<IActionResult> PutPerson(int id, [FromForm] UpdatePersonDTO updatePersonDTO)
         {
             var person = await _context.People.FindAsync(id);
 
@@ -164,9 +190,29 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 return NotFound();
             }
 
+            // Si el usuario proporciona una nueva imagen, se actualiza, de lo contrario se conserva la actual
+            if (updatePersonDTO.Photo != null)
+            {
+                var uploadsFolder = Path.Combine(_env.ContentRootPath, "Uploads");
+                var uniqueFileName = Guid.NewGuid().ToString() + "_" + updatePersonDTO.Photo.FileName;
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                // Asegurarse de que el directorio existe
+                Directory.CreateDirectory(uploadsFolder);
+
+                // Guardar la nueva imagen
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await updatePersonDTO.Photo.CopyToAsync(fileStream);
+                }
+
+                // Actualizamos la ruta de la imagen
+                person.Photo = Path.Combine("Uploads", uniqueFileName);
+            }
+
+            // Actualizar los demás campos
             person.PhoneNumber = updatePersonDTO.PhoneNumber;
             person.CellPhoneNumber = updatePersonDTO.CellPhoneNumber;
-            person.Photo = updatePersonDTO.Photo;
             person.Address = updatePersonDTO.Address;
             person.Email = updatePersonDTO.Email;
             person.UpdatedAt = DateTime.UtcNow;
@@ -249,6 +295,24 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                    lastName.Substring(0, 1).ToUpper() +
                    lastName.Substring(1, 1).ToLower() +
                    ci.Substring(0, 4);
+        }
+
+        // Verificar si el CI ya está registrado
+        [HttpGet("CheckCIExists/{ci}")]
+        public IActionResult CheckCIExists(string ci)
+        {
+            var ciExists = _context.People
+                .Any(p => p.Ci == ci && p.IsDeleted == "0");
+            return Ok(new { exists = ciExists });
+        }
+
+        // Verificar si el correo ya está registrado
+        [HttpGet("CheckEmailExists/{email}")]
+        public IActionResult CheckEmailExists(string email)
+        {
+            var emailExists = _context.People
+                .Any(p => p.Email.ToLower() == email.ToLower() && p.IsDeleted == "0");
+            return Ok(new { exists = emailExists });
         }
 
         private bool PersonExists(int id)

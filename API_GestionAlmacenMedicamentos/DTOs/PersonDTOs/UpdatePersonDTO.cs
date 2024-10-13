@@ -4,8 +4,9 @@
     {
         public string? PhoneNumber { get; set; }
         public string CellPhoneNumber { get; set; } = null!;
-        public string? Photo { get; set; }
+        public IFormFile? Photo { get; set; }  // Manejamos el archivo de la imagen
         public string Address { get; set; } = null!;
         public string Email { get; set; } = null!;
     }
+
 }

@@ -165,6 +165,16 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             return NoContent();
         }
 
+        // Verificar si el nombre de la unidad de manejo ya está registrado
+        [HttpGet("CheckNameExists/{name}")]
+        public IActionResult CheckHandlingUnitNameExists(string name)
+        {
+            var nameExists = _context.HandlingUnits
+                .Any(hu => hu.NameUnit.ToLower() == name.ToLower() && hu.IsDeleted == "0");
+            return Ok(new { exists = nameExists });
+        }
+
+
         private bool HandlingUnitExists(int id)
         {
             return _context.HandlingUnits.Any(e => e.HandlingUnitId == id && e.IsDeleted == "0");

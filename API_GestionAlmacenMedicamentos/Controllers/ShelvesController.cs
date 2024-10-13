@@ -36,7 +36,10 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                  {
                      ShelfId = s.ShelfId,
                      NameShelf = s.NameShelf,
-                     WarehouseId = s.WarehouseId
+                     WarehouseName = _context.Warehouses
+                        .Where(w => w.WarehouseId == s.WarehouseId)
+                        .Select(w => w.NameWarehouse)
+                        .FirstOrDefault() ?? "N/A"
                  })
                  .ToListAsync();
         }
@@ -56,12 +59,13 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             {
                 ShelfId = shelf.ShelfId,
                 NameShelf = shelf.NameShelf,
-                WarehouseId = shelf.WarehouseId
+                WarehouseName = _context.Warehouses.FirstOrDefault(w => w.WarehouseId == shelf.WarehouseId)?.NameWarehouse  
             };
 
             return shelfDTO;
         }
 
+        // POST: api/Shelves
         [HttpPost]
         public async Task<ActionResult<ShelfDTO>> PostShelf([FromBody] CreateShelfDTO createShelfDTO)
         {
@@ -72,12 +76,20 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
             try
             {
+                // Buscar el ID del almacén usando el nombre
+                var warehouse = await _context.Warehouses.FirstOrDefaultAsync(w => w.NameWarehouse == createShelfDTO.WarehouseName);
+
+                if (warehouse == null)
+                {
+                    return BadRequest("El almacén proporcionado no existe.");
+                }
+
                 var userId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
 
                 var shelf = new Shelf
                 {
                     NameShelf = createShelfDTO.NameShelf,
-                    WarehouseId = createShelfDTO.WarehouseId,
+                    WarehouseId = warehouse.WarehouseId,  // Asignar el ID del almacén
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = userId,
                     IsDeleted = "0"
@@ -90,7 +102,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 {
                     ShelfId = shelf.ShelfId,
                     NameShelf = shelf.NameShelf,
-                    WarehouseId = shelf.WarehouseId
+                    WarehouseName = warehouse.NameWarehouse
                 };
 
                 return CreatedAtAction("GetShelf", new { id = shelf.ShelfId }, shelfDTO);
@@ -101,6 +113,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
+        // PUT: api/Shelves/5
         [HttpPut("{id}")]
         public async Task<IActionResult> PutShelf(int id, [FromBody] UpdateShelfDTO updateShelfDTO)
         {
@@ -113,10 +126,18 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     return NotFound();
                 }
 
+                // Buscar el ID del almacén usando el nombre
+                var warehouse = await _context.Warehouses.FirstOrDefaultAsync(w => w.NameWarehouse == updateShelfDTO.WarehouseName);
+
+                if (warehouse == null)
+                {
+                    return BadRequest("El almacén proporcionado no existe.");
+                }
+
                 var userId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
 
                 shelf.NameShelf = updateShelfDTO.NameShelf;
-                shelf.WarehouseId = updateShelfDTO.WarehouseId;
+                shelf.WarehouseId = warehouse.WarehouseId;  // Asignar el ID del almacén
                 shelf.UpdatedAt = DateTime.UtcNow;
                 shelf.UpdatedBy = userId;
 
@@ -140,6 +161,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
+        // DELETE: api/Shelves/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteShelf(int id)
         {
@@ -170,6 +192,16 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, $"Error interno al eliminar el estante: {ex.Message} - {ex.InnerException?.Message}");
             }
+        }
+
+        // Verificar si existe un estante
+        [HttpGet("CheckShelfExists")]
+        public IActionResult CheckShelfExists(string nameShelf)
+        {
+            var shelfExists = _context.Shelves
+                .Any(s => s.NameShelf.ToLower() == nameShelf.ToLower() && s.IsDeleted == "0");
+
+            return Ok(new { shelfExists });
         }
 
         private bool ShelfExists(int id)

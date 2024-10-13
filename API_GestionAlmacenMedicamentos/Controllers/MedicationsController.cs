@@ -172,6 +172,17 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
+        [HttpGet("checkMedication/{nameMedicine}")]
+        public IActionResult CheckMedicationExists(string nameMedicine)
+        {
+            // Verificar si ya existe un medicamento con el mismo nombre que no ha sido eliminado (IsDeleted == "0")
+            bool exists = _context.Medications
+                .Any(m => m.NameMedicine == nameMedicine && m.IsDeleted == "0");
+
+            return Ok(new { exists });
+        }
+
+
         private bool MedicationExists(int id)
         {
             return _context.Medications.Any(e => e.MedicationId == id && e.IsDeleted == "0");

@@ -2,6 +2,8 @@ using API_GestionAlmacenMedicamentos.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.FileProviders;
+using System.IO;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -79,6 +81,12 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Configurar para servir archivos estáticos desde la carpeta 'Uploads'
+builder.Services.AddSingleton<IFileProvider>(
+    new PhysicalFileProvider(
+        Path.Combine(Directory.GetCurrentDirectory(), "Uploads"))
+);
+
 var app = builder.Build();
 
 // Configurar el pipeline de la aplicación
@@ -97,6 +105,13 @@ app.UseCors("AllowAllOrigins");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Servir archivos estáticos desde la carpeta 'Uploads'
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "Uploads")),
+    RequestPath = "/Uploads"
+});
 
 app.MapControllers();
 

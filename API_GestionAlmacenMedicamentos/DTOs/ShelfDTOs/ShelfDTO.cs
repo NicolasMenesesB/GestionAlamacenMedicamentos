@@ -4,6 +4,6 @@
     {
         public int ShelfId { get; set; }
         public string NameShelf { get; set; } = null!;
-        public int WarehouseId { get; set; }
+        public string WarehouseName { get; set; } = null!;
     }
 }

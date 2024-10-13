@@ -190,6 +190,15 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
+        [HttpGet("CheckSupplierExists")]
+        public async Task<IActionResult> CheckSupplierExists(string nameSupplier)
+        {
+            var exists = await _context.Suppliers
+                .AnyAsync(s => s.NameSupplier.ToLower() == nameSupplier.ToLower() && s.IsDeleted == "0");
+
+            return Ok(new { exists });
+        }
+
         private bool SupplierExists(int id)
         {
             return _context.Suppliers.Any(e => e.SupplierId == id && e.IsDeleted == "0");

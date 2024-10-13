@@ -10,6 +10,7 @@ using API_GestionAlmacenMedicamentos.Models;
 using API_GestionAlmacenMedicamentos.DTOs.TypeOfMovementDTOs;
 using System.Data.SqlTypes;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace API_GestionAlmacenMedicamentos.Controllers
 {
@@ -69,15 +70,23 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 return BadRequest(ModelState);
             }
 
+            // Verificar si la reclamación "name" existe
+            var claim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+
+            if (claim == null || string.IsNullOrEmpty(claim.Value))
+            {
+                return Unauthorized("User information is missing.");
+            }
+
             // Obtener el userId desde el JWT
-            var userId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == "name")?.Value);
+            var userId = int.Parse(claim.Value);
 
             var typeOfMovement = new TypeOfMovement
             {
                 NameOfMovement = createTypeOfMovementDTO.NameOfMovement,
                 DescriptionOfMovement = createTypeOfMovementDTO.DescriptionOfMovement,
                 CreatedAt = DateTime.UtcNow,
-                CreatedBy = userId,  // Aquí asignamos el ID del usuario desde el JWT
+                CreatedBy = userId,
                 IsDeleted = "0"
             };
 
@@ -97,6 +106,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutTypeOfMovement(int id, [FromBody] UpdateTypeOfMovementDTO updateTypeOfMovementDTO)
         {
+            // Verificar si el TypeOfMovement existe y no está marcado como eliminado
             var typeOfMovement = await _context.TypeOfMovements.FindAsync(id);
 
             if (typeOfMovement == null || typeOfMovement.IsDeleted == "1")
@@ -104,13 +114,25 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 return NotFound();
             }
 
-            // Obtener el userId desde el JWT
-            var userId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == "name")?.Value);
+            // Verificar si el Claim "name" existe antes de intentar obtener el userId
+            var claim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
 
+            if (claim == null || string.IsNullOrEmpty(claim.Value))
+            {
+                return Unauthorized("User information is missing.");
+            }
+
+            // Obtener el userId desde el JWT
+            if (!int.TryParse(claim.Value, out var userId))
+            {
+                return Unauthorized("Invalid user information.");
+            }
+
+            // Actualizar el TypeOfMovement
             typeOfMovement.NameOfMovement = updateTypeOfMovementDTO.NameOfMovement;
             typeOfMovement.DescriptionOfMovement = updateTypeOfMovementDTO.DescriptionOfMovement;
             typeOfMovement.UpdatedAt = DateTime.UtcNow;
-            typeOfMovement.UpdatedBy = userId;  // Aquí asignamos el ID del usuario desde el JWT
+            typeOfMovement.UpdatedBy = userId;  // Asignar el ID del usuario desde el JWT
 
             _context.Entry(typeOfMovement).State = EntityState.Modified;
 
@@ -133,7 +155,6 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
             return NoContent();
         }
-
 
         // DELETE: api/TypeOfMovements/5
         [HttpDelete("{id}")]

@@ -1,11 +1,19 @@
 {
   "Version": 1,
-  "Hash": "sBViAsE1uM/7gCRy9xrHRu/iCrnaW5QCssh7isJQ0HI=",
+  "Hash": "6w/y09ccVXjqGcUtiADlkaK5PeKfjX7FFYaRsoIdkRI=",
   "Source": "API_GestionAlmacenMedicamentos",
   "BasePath": "_content/API_GestionAlmacenMedicamentos",
   "Mode": "Default",
   "ManifestType": "Build",
   "ReferencedProjectsConfiguration": [],
-  "DiscoveryPatterns": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "API_GestionAlmacenMedicamentos\\wwwroot",
+      "Source": "API_GestionAlmacenMedicamentos",
+      "ContentRoot": "C:\\Users\\Nicolas\\Desktop\\ProyectoGrado_GestionAlmacenMedicamentos\\API_GestionAlmacenMedicamentos\\wwwroot\\",
+      "BasePath": "_content/API_GestionAlmacenMedicamentos",
+      "Pattern": "**"
+    }
+  ],
   "Assets": []
 }

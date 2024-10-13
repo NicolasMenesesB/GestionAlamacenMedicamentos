@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace API_GestionAlmacenMedicamentos.Models
 {
-    public partial class Person
+    public class Person
     {
         [Key]
         public int PersonId { get; set; }
@@ -28,8 +28,7 @@ namespace API_GestionAlmacenMedicamentos.Models
         [StringLength(15)]
         public string CellPhoneNumber { get; set; } = null!;
 
-        [StringLength(int.MaxValue)]
-        public string? Photo { get; set; }
+        public string? Photo { get; set; }  // Guardamos la ruta o URL de la imagen
 
         [Required]
         [StringLength(1)]

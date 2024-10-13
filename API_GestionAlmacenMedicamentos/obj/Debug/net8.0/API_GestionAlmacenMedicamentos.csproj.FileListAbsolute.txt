@@ -253,3 +253,4 @@ C:\Users\Nicolas\Desktop\ProyectoGrado_GestionAlmacenMedicamentos\API_GestionAlm
 C:\Users\Nicolas\Desktop\ProyectoGrado_GestionAlmacenMedicamentos\API_GestionAlmacenMedicamentos\obj\Debug\net8.0\API_GestionAlmacenMedicamentos.genruntimeconfig.cache
 C:\Users\Nicolas\Desktop\ProyectoGrado_GestionAlmacenMedicamentos\API_GestionAlmacenMedicamentos\obj\Debug\net8.0\ref\API_GestionAlmacenMedicamentos.dll
 C:\Users\Nicolas\Desktop\ProyectoGrado_GestionAlmacenMedicamentos\API_GestionAlmacenMedicamentos\obj\Debug\net8.0\API_GestionAlmacenMedicamentos.sourcelink.json
+C:\Users\Nicolas\Desktop\ProyectoGrado_GestionAlmacenMedicamentos\API_GestionAlmacenMedicamentos\bin\Debug\net8.0\API_GestionAlmacenMedicamentos.staticwebassets.runtime.json
