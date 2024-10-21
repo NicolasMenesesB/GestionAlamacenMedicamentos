@@ -16,9 +16,9 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
     public class WarehousesController : ControllerBase
     {
-        private readonly DbGestionAlmacenMedicamentosContext _context;
+        private readonly Data.DbGestionAlmacenMedicamentosContext _context;
 
-        public WarehousesController(DbGestionAlmacenMedicamentosContext context)
+        public WarehousesController(Data.DbGestionAlmacenMedicamentosContext context)
         {
             _context = context;
         }

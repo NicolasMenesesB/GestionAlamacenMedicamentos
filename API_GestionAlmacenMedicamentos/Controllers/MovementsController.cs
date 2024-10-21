@@ -18,9 +18,9 @@ namespace API_GestionAlmacenMedicamentos.Controllers
     [ApiController]
     public class MovementsController : ControllerBase
     {
-        private readonly DbGestionAlmacenMedicamentosContext _context;
+        private readonly Data.DbGestionAlmacenMedicamentosContext _context;
 
-        public MovementsController(DbGestionAlmacenMedicamentosContext context)
+        public MovementsController(Data.DbGestionAlmacenMedicamentosContext context)
         {
             _context = context;
         }

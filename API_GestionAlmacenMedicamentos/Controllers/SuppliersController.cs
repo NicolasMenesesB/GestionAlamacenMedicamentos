@@ -19,9 +19,9 @@ namespace API_GestionAlmacenMedicamentos.Controllers
     [ApiController]
     public class SuppliersController : ControllerBase
     {
-        private readonly DbGestionAlmacenMedicamentosContext _context;
+        private readonly Data.DbGestionAlmacenMedicamentosContext _context;
 
-        public SuppliersController(DbGestionAlmacenMedicamentosContext context)
+        public SuppliersController(Data.DbGestionAlmacenMedicamentosContext context)
         {
             _context = context;
         }

@@ -19,9 +19,9 @@ namespace API_GestionAlmacenMedicamentos.Controllers
     [ApiController]
     public class ReportsController : ControllerBase
     {
-        private readonly DbGestionAlmacenMedicamentosContext _context;
+        private readonly Data.DbGestionAlmacenMedicamentosContext _context;
 
-        public ReportsController(DbGestionAlmacenMedicamentosContext context)
+        public ReportsController(Data.DbGestionAlmacenMedicamentosContext context)
         {
             _context = context;
         }

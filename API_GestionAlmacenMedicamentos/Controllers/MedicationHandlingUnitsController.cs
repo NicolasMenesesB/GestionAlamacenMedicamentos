@@ -13,9 +13,9 @@ namespace API_GestionAlmacenMedicamentos.Controllers
     [Route("api/[controller]")]
     public class MedicationHandlingUnitController : ControllerBase
     {
-        private readonly DbGestionAlmacenMedicamentosContext _context;
+        private readonly Data.DbGestionAlmacenMedicamentosContext _context;
 
-        public MedicationHandlingUnitController(DbGestionAlmacenMedicamentosContext context)
+        public MedicationHandlingUnitController(Data.DbGestionAlmacenMedicamentosContext context)
         {
             _context = context;
         }

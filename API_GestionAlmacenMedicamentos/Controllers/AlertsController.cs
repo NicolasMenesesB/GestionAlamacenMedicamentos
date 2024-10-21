@@ -16,9 +16,9 @@ namespace API_GestionAlmacenMedicamentos.Controllers
     [ApiController]
     public class AlertsController : ControllerBase
     {
-        private readonly DbGestionAlmacenMedicamentosContext _context;
+        private readonly Data.DbGestionAlmacenMedicamentosContext _context;
 
-        public AlertsController(DbGestionAlmacenMedicamentosContext context)
+        public AlertsController(Data.DbGestionAlmacenMedicamentosContext context)
         {
             _context = context;
         }

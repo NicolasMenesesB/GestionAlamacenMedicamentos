@@ -18,9 +18,9 @@ namespace API_GestionAlmacenMedicamentos.Controllers
     [ApiController]
     public class BatchesController : ControllerBase
     {
-        private readonly DbGestionAlmacenMedicamentosContext _context;
+        private readonly Data.DbGestionAlmacenMedicamentosContext _context;
 
-        public BatchesController(DbGestionAlmacenMedicamentosContext context)
+        public BatchesController(Data.DbGestionAlmacenMedicamentosContext context)
         {
             _context = context;
         }

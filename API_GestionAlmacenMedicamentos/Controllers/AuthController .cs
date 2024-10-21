@@ -17,10 +17,10 @@ namespace API_GestionAlmacenMedicamentos.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly DbGestionAlmacenMedicamentosContext _context;
+        private readonly Data.DbGestionAlmacenMedicamentosContext _context;
         private readonly IConfiguration _configuration;
 
-        public AuthController(DbGestionAlmacenMedicamentosContext context, IConfiguration configuration)
+        public AuthController(Data.DbGestionAlmacenMedicamentosContext context, IConfiguration configuration)
         {
             _context = context;
             _configuration = configuration;

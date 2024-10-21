@@ -19,9 +19,9 @@ namespace API_GestionAlmacenMedicamentos.Controllers
     [ApiController]
     public class ShelvesController : ControllerBase
     {
-        private readonly DbGestionAlmacenMedicamentosContext _context;
+        private readonly Data.DbGestionAlmacenMedicamentosContext _context;
 
-        public ShelvesController(DbGestionAlmacenMedicamentosContext context)
+        public ShelvesController(Data.DbGestionAlmacenMedicamentosContext context)
         {
             _context = context;
         }

@@ -19,9 +19,9 @@ namespace API_GestionAlmacenMedicamentos.Controllers
     [ApiController]
     public class HandlingUnitsController : ControllerBase
     {
-        private readonly DbGestionAlmacenMedicamentosContext _context;
+        private readonly Data.DbGestionAlmacenMedicamentosContext _context;
 
-        public HandlingUnitsController(DbGestionAlmacenMedicamentosContext context)
+        public HandlingUnitsController(Data.DbGestionAlmacenMedicamentosContext context)
         {
             _context = context;
         }

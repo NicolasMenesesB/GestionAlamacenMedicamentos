@@ -22,10 +22,10 @@ namespace API_GestionAlmacenMedicamentos.Controllers
     [ApiController]
     public class PeopleController : ControllerBase
     {
-        private readonly DbGestionAlmacenMedicamentosContext _context;
+        private readonly Data.DbGestionAlmacenMedicamentosContext _context;
         private readonly IWebHostEnvironment _env;
 
-        public PeopleController(DbGestionAlmacenMedicamentosContext context, IWebHostEnvironment env)
+        public PeopleController(Data.DbGestionAlmacenMedicamentosContext context, IWebHostEnvironment env)
         {
             _context = context;
             _env = env;
