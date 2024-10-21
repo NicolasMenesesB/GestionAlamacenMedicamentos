@@ -86,6 +86,7 @@ public partial class DbGestionAlmacenMedicamentosContext : DbContext
             entity.Property(e => e.ExpirationDate).HasColumnName("expirationDate");
             entity.Property(e => e.FabricationDate).HasColumnName("fabricationDate");
             entity.Property(e => e.InitialQuantity).HasColumnName("initialQuantity");
+            entity.Property(e => e.MinimumStock).HasColumnName("minimumStock");
             entity.Property(e => e.IsDeleted)
                 .HasMaxLength(1)
                 .IsUnicode(false)

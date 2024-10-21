@@ -42,8 +42,9 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     ExpirationDate = batch.ExpirationDate.ToString("yyyy-MM-dd"),
                     InitialQuantity = batch.InitialQuantity,
                     CurrentQuantity = batch.CurrentQuantity,
-                    MedicationHandlingUnitName = batch.MedicationHandlingUnit.HandlingUnit.NameUnit, // Nombre de la unidad de manejo desde HandlingUnit
-                    SupplierName = batch.Supplier.NameSupplier // Nombre del proveedor desde Supplier
+                    MinimumStock = batch.MinimumStock, // Campo agregado para el stock mínimo
+                    MedicationHandlingUnitName = batch.MedicationHandlingUnit.HandlingUnit.NameUnit, // Nombre de la unidad de manejo
+                    SupplierName = batch.Supplier.NameSupplier // Nombre del proveedor
                 })
                 .ToListAsync();
         }
@@ -71,132 +72,15 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 ExpirationDate = batch.ExpirationDate.ToString("yyyy-MM-dd"),
                 InitialQuantity = batch.InitialQuantity,
                 CurrentQuantity = batch.CurrentQuantity,
-                MedicationHandlingUnitName = batch.MedicationHandlingUnit.HandlingUnit.NameUnit,
-                SupplierName = batch.Supplier.NameSupplier
+                MinimumStock = batch.MinimumStock, // Campo agregado para el stock mínimo
+                MedicationHandlingUnitName = batch.MedicationHandlingUnit.HandlingUnit.NameUnit, // Nombre de la unidad de manejo
+                SupplierName = batch.Supplier.NameSupplier // Nombre del proveedor
             };
 
             return batchDTO;
         }
 
-        // POST: api/Batches
-        [HttpPost]
-        public async Task<ActionResult<BatchDTO>> PostBatch([FromBody] CreateBatchDTO createDTO)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            try
-            {
-                // Buscar los IDs basados en los nombres
-                var medicationHandlingUnit = await _context.MedicationHandlingUnits
-                    .Include(mhu => mhu.HandlingUnit)
-                    .FirstOrDefaultAsync(mhu => mhu.HandlingUnit.NameUnit == createDTO.MedicationHandlingUnitName);
-                var supplier = await _context.Suppliers.FirstOrDefaultAsync(s => s.NameSupplier == createDTO.SupplierName);
-
-                if (medicationHandlingUnit == null || supplier == null)
-                {
-                    return BadRequest("Alguno de los valores proporcionados no es válido.");
-                }
-
-                var batch = new Batch
-                {
-                    BatchCode = createDTO.BatchCode,
-                    FabricationDate = DateOnly.Parse(createDTO.FabricationDate),
-                    ExpirationDate = DateOnly.Parse(createDTO.ExpirationDate),
-                    InitialQuantity = createDTO.InitialQuantity,
-                    CurrentQuantity = createDTO.CurrentQuantity,
-                    MedicationHandlingUnitId = medicationHandlingUnit.MedicationHandlingUnitId,
-                    SupplierId = supplier.SupplierId,
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedBy = 1, // Ajustar según lógica de negocio
-                    IsDeleted = "0"
-                };
-
-                _context.Batches.Add(batch);
-                await _context.SaveChangesAsync();
-
-                return CreatedAtAction("GetBatch", new { id = batch.BatchId }, batch);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al crear el lote: {ex.Message}");
-            }
-        }
-
-        // PUT: api/Batches/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutBatch(int id, [FromBody] UpdateBatchDTO updateDTO)
-        {
-            try
-            {
-                var batch = await _context.Batches.FindAsync(id);
-
-                if (batch == null || batch.IsDeleted == "1")
-                {
-                    return NotFound();
-                }
-
-                // Buscar los IDs basados en los nombres
-                var medicationHandlingUnit = await _context.MedicationHandlingUnits
-                    .Include(mhu => mhu.HandlingUnit)
-                    .FirstOrDefaultAsync(mhu => mhu.HandlingUnit.NameUnit == updateDTO.MedicationHandlingUnitName);
-                var supplier = await _context.Suppliers.FirstOrDefaultAsync(s => s.NameSupplier == updateDTO.SupplierName);
-
-                if (medicationHandlingUnit == null || supplier == null)
-                {
-                    return BadRequest("Alguno de los valores proporcionados no es válido.");
-                }
-
-                // Actualizar propiedades
-                batch.BatchCode = updateDTO.BatchCode;
-                batch.FabricationDate = DateOnly.Parse(updateDTO.FabricationDate);
-                batch.ExpirationDate = DateOnly.Parse(updateDTO.ExpirationDate);
-                batch.InitialQuantity = updateDTO.InitialQuantity;
-                batch.CurrentQuantity = updateDTO.CurrentQuantity;
-                batch.MedicationHandlingUnitId = medicationHandlingUnit.MedicationHandlingUnitId;
-                batch.SupplierId = supplier.SupplierId;
-                batch.UpdatedAt = DateTime.UtcNow;
-                batch.UpdatedBy = 1; // Ajustar según lógica de negocio
-
-                _context.Entry(batch).State = EntityState.Modified;
-                await _context.SaveChangesAsync();
-
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error interno: {ex.Message}");
-            }
-        }
-
-        // DELETE: api/Batches/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteBatch(int id)
-        {
-            try
-            {
-                var batch = await _context.Batches.FindAsync(id);
-
-                if (batch == null || batch.IsDeleted == "1")
-                {
-                    return NotFound();
-                }
-
-                batch.IsDeleted = "1";
-                batch.UpdatedAt = DateTime.UtcNow;
-
-                await _context.SaveChangesAsync();
-
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error interno al eliminar el lote: {ex.Message}");
-            }
-        }
-
+        // POST: api/Batches/full
         [HttpPost("full")]
         public async Task<ActionResult> CreateFullBatch([FromBody] CreateFullBatchDTO createDTO)
         {
@@ -235,21 +119,6 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     _context.MedicationHandlingUnits.Add(medicationHandlingUnit);
                     await _context.SaveChangesAsync();
 
-                    // Crear registro en DetailMedicationHandlingUnit
-                    var detailMedicationHandlingUnit = new DetailMedicationHandlingUnit
-                    {
-                        DetailMedicationHandlingUnitId = medicationHandlingUnit.MedicationHandlingUnitId, // Relación 1 a 1
-                        StorageColdChain = createDTO.StorageColdChain ?? "0",
-                        PhotoSensitiveStorage = createDTO.PhotoSensitiveStorage ?? "0",
-                        Controlled = createDTO.Controlled ?? "0",
-                        Oncological = createDTO.Oncological ?? "0",
-                        CreatedAt = DateTime.UtcNow,
-                        CreatedBy = 1, // Ajustar según lógica de negocio
-                        IsDeleted = "0"
-                    };
-                    _context.DetailMedicationHandlingUnits.Add(detailMedicationHandlingUnit);
-                    await _context.SaveChangesAsync();
-
                     // Crear batch
                     var batch = new Batch
                     {
@@ -258,6 +127,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                         ExpirationDate = DateOnly.Parse(createDTO.ExpirationDate),
                         InitialQuantity = createDTO.InitialQuantity,
                         CurrentQuantity = createDTO.CurrentQuantity,
+                        MinimumStock = createDTO.MinimumStock, // Stock mínimo añadido aquí
                         MedicationHandlingUnitId = medicationHandlingUnit.MedicationHandlingUnitId,
                         SupplierId = createDTO.SupplierId,
                         CreatedAt = DateTime.UtcNow,
@@ -265,6 +135,20 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                         IsDeleted = "0"
                     };
                     _context.Batches.Add(batch);
+                    await _context.SaveChangesAsync();
+
+                    // Crear movimiento relacionado con el lote
+                    var movement = new Movement
+                    {
+                        Quantity = createDTO.Quantity,
+                        DateOfMoviment = DateOnly.Parse(createDTO.FabricationDate),
+                        TypeOfMovementId = (await _context.TypeOfMovements.FirstOrDefaultAsync(t => t.NameOfMovement == createDTO.NameOfMovement)).TypeOfMovementId,
+                        BatchId = batch.BatchId,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = 1, // Ajustar según lógica de negocio
+                        IsDeleted = "0"
+                    };
+                    _context.Movements.Add(movement);
                     await _context.SaveChangesAsync();
 
                     // Commit de la transacción
@@ -280,8 +164,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
-
-
+        // POST: api/Batches/partial
         [HttpPost("partial")]
         public async Task<ActionResult> CreatePartialBatch([FromBody] CreatePartialBatchDTO createDTO)
         {
@@ -316,21 +199,6 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     _context.MedicationHandlingUnits.Add(medicationHandlingUnit);
                     await _context.SaveChangesAsync();
 
-                    // Crear registro en DetailMedicationHandlingUnit
-                    var detailMedicationHandlingUnit = new DetailMedicationHandlingUnit
-                    {
-                        DetailMedicationHandlingUnitId = medicationHandlingUnit.MedicationHandlingUnitId, // Relación 1 a 1
-                        StorageColdChain = createDTO.StorageColdChain ?? "0",
-                        PhotoSensitiveStorage = createDTO.PhotoSensitiveStorage ?? "0",
-                        Controlled = createDTO.Controlled ?? "0",
-                        Oncological = createDTO.Oncological ?? "0",
-                        CreatedAt = DateTime.UtcNow,
-                        CreatedBy = 1, // Ajustar según lógica de negocio
-                        IsDeleted = "0"
-                    };
-                    _context.DetailMedicationHandlingUnits.Add(detailMedicationHandlingUnit);
-                    await _context.SaveChangesAsync();
-
                     // Crear batch
                     var batch = new Batch
                     {
@@ -339,6 +207,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                         ExpirationDate = DateOnly.Parse(createDTO.ExpirationDate),
                         InitialQuantity = createDTO.InitialQuantity,
                         CurrentQuantity = createDTO.CurrentQuantity,
+                        MinimumStock = createDTO.MinimumStock, // Stock mínimo añadido aquí
                         MedicationHandlingUnitId = medicationHandlingUnit.MedicationHandlingUnitId,
                         SupplierId = createDTO.SupplierId,
                         CreatedAt = DateTime.UtcNow,
@@ -346,6 +215,20 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                         IsDeleted = "0"
                     };
                     _context.Batches.Add(batch);
+                    await _context.SaveChangesAsync();
+
+                    // Crear movimiento relacionado con el lote
+                    var movement = new Movement
+                    {
+                        Quantity = createDTO.Quantity,
+                        DateOfMoviment = DateOnly.Parse(createDTO.FabricationDate),
+                        TypeOfMovementId = (await _context.TypeOfMovements.FirstOrDefaultAsync(t => t.NameOfMovement == createDTO.NameOfMovement)).TypeOfMovementId,
+                        BatchId = batch.BatchId,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = 1, // Ajustar según lógica de negocio
+                        IsDeleted = "0"
+                    };
+                    _context.Movements.Add(movement);
                     await _context.SaveChangesAsync();
 
                     // Commit de la transacción
@@ -361,17 +244,29 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
+        // DELETE: api/Batches/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteBatch(int id)
+        {
+            var batch = await _context.Batches.FindAsync(id);
+            if (batch == null)
+            {
+                return NotFound();
+            }
+
+            batch.IsDeleted = "1"; // Marcar como eliminado
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // GET: api/Batches/checkBatchCode/{batchCode}
         [HttpGet("checkBatchCode/{batchCode}")]
         public async Task<IActionResult> CheckBatchCodeExists(string batchCode)
         {
-            bool exists = await _context.Batches.AnyAsync(b => b.BatchCode == batchCode && b.IsDeleted == "0");
+            var exists = await _context.Batches.AnyAsync(b => b.BatchCode == batchCode && b.IsDeleted == "0");
             return Ok(new { exists });
         }
 
-
-        private bool BatchExists(int id)
-        {
-            return _context.Batches.Any(e => e.BatchId == id && e.IsDeleted == "0");
-        }
     }
 }

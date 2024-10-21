@@ -16,6 +16,7 @@ public partial class Batch
     public int InitialQuantity { get; set; }
 
     public int CurrentQuantity { get; set; }
+    public int MinimumStock { get; set; }
 
     public int MedicationHandlingUnitId { get; set; }
 
