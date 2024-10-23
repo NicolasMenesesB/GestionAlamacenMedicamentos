@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "6w/y09ccVXjqGcUtiADlkaK5PeKfjX7FFYaRsoIdkRI=",
+  "Hash": "z7jmZFKAV9fa7icGTz55BBY8fqXFKqHVTQu5ayu6ZsE=",
   "Source": "API_GestionAlmacenMedicamentos",
   "BasePath": "_content/API_GestionAlmacenMedicamentos",
   "Mode": "Default",
@@ -10,7 +10,7 @@
     {
       "Name": "API_GestionAlmacenMedicamentos\\wwwroot",
       "Source": "API_GestionAlmacenMedicamentos",
-      "ContentRoot": "C:\\Users\\Nicolas\\Desktop\\ProyectoGrado_GestionAlmacenMedicamentos\\API_GestionAlmacenMedicamentos\\wwwroot\\",
+      "ContentRoot": "D:\\ProyectoGrado_GestionAlmacenMedicamentos\\API_GestionAlmacenMedicamentos\\wwwroot\\",
       "BasePath": "_content/API_GestionAlmacenMedicamentos",
       "Pattern": "**"
     }

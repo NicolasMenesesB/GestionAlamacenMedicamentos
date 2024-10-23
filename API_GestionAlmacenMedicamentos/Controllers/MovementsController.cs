@@ -72,6 +72,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
         }
 
         // POST: api/Movements
+        // POST: api/Movements
         [HttpPost]
         public async Task<ActionResult<MovementDTO>> PostMovement([FromBody] CreateMovementDTO createMovementDTO)
         {
@@ -113,20 +114,27 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 IsDeleted = "0"
             };
 
-            // Actualizar la cantidad actual del lote
-            if (typeOfMovement.NameOfMovement.StartsWith("Entrada"))
+            // Validar si la cantidad solicitada excede la cantidad actual en el lote
+            if (createMovementDTO.Quantity > batch.CurrentQuantity)
             {
-                batch.CurrentQuantity += movement.Quantity;
+                return BadRequest("The quantity exceeds the available stock.");
             }
-            else if (typeOfMovement.NameOfMovement.StartsWith("Salida"))
+
+            // Actualizar la cantidad actual del lote
+            if (typeOfMovement.NameOfMovement.StartsWith("Salida"))
             {
                 batch.CurrentQuantity -= movement.Quantity;
-                if (batch.CurrentQuantity < 0)
+                if (batch.CurrentQuantity <= batch.MinimumStock) // Alerta si llega al stock mínimo
                 {
-                    return BadRequest("The quantity exceeds the available stock.");
+                    // Registrar el movimiento pero con una alerta sobre el stock mínimo
+                    _context.Movements.Add(movement);
+                    await _context.SaveChangesAsync();
+                    return CreatedAtAction("GetMovement", new { id = movement.MovementId },
+                        new { Message = $"El lote {batch.BatchCode} ha alcanzado el stock mínimo.", Movement = movement });
                 }
             }
 
+            // Registrar el movimiento normalmente
             _context.Movements.Add(movement);
             await _context.SaveChangesAsync();
 
@@ -141,6 +149,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
             return CreatedAtAction("GetMovement", new { id = movement.MovementId }, movementDTO);
         }
+
 
         // PUT: api/Movements/5
         [HttpPut("{id}")]

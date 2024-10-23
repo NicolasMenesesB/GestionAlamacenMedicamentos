@@ -8059,11 +8059,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Nicolas\\Desktop\\ProyectoGrado_GestionAlmacenMedicamentos\\API_GestionAlmacenMedicamentos\\API_GestionAlmacenMedicamentos.csproj",
+      "projectUniqueName": "D:\\ProyectoGrado_GestionAlmacenMedicamentos\\API_GestionAlmacenMedicamentos\\API_GestionAlmacenMedicamentos.csproj",
       "projectName": "API_GestionAlmacenMedicamentos",
-      "projectPath": "C:\\Users\\Nicolas\\Desktop\\ProyectoGrado_GestionAlmacenMedicamentos\\API_GestionAlmacenMedicamentos\\API_GestionAlmacenMedicamentos.csproj",
+      "projectPath": "D:\\ProyectoGrado_GestionAlmacenMedicamentos\\API_GestionAlmacenMedicamentos\\API_GestionAlmacenMedicamentos.csproj",
       "packagesPath": "C:\\Users\\Nicolas\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Nicolas\\Desktop\\ProyectoGrado_GestionAlmacenMedicamentos\\API_GestionAlmacenMedicamentos\\obj\\",
+      "outputPath": "D:\\ProyectoGrado_GestionAlmacenMedicamentos\\API_GestionAlmacenMedicamentos\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
