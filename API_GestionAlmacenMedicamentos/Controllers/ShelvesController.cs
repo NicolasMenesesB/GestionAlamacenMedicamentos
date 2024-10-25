@@ -204,6 +204,18 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             return Ok(new { shelfExists });
         }
 
+        // Verificar si existe un estante en un almacén específico
+        [HttpGet("CheckShelfExistsInWarehouse")]
+        public IActionResult CheckShelfExistsInWarehouse(string nameShelf, string warehouseName)
+        {
+            var shelfExists = _context.Shelves
+                .Any(s => s.NameShelf.ToLower() == nameShelf.ToLower()
+                          && s.Warehouse.NameWarehouse.ToLower() == warehouseName.ToLower()
+                          && s.IsDeleted == "0");
+
+            return Ok(new { shelfExists });
+        }
+
         private bool ShelfExists(int id)
         {
             return _context.Shelves.Any(e => e.ShelfId == id && e.IsDeleted == "0");
