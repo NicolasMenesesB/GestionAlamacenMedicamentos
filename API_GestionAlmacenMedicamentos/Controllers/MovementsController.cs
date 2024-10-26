@@ -72,7 +72,6 @@ namespace API_GestionAlmacenMedicamentos.Controllers
         }
 
         // POST: api/Movements
-        // POST: api/Movements
         [HttpPost]
         public async Task<ActionResult<MovementDTO>> PostMovement([FromBody] CreateMovementDTO createMovementDTO)
         {

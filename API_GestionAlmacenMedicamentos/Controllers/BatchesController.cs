@@ -260,6 +260,26 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             return NoContent();
         }
 
+        // GET: api/Batches/expiringSoon
+        [HttpGet("expiringSoon")]
+        public async Task<ActionResult<IEnumerable<BatchDTO>>> GetBatchesExpiringSoon()
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var nextMonth = today.AddMonths(1);
+
+            var expiringSoonBatches = await _context.Batches
+                .Where(b => b.IsDeleted == "0" && b.ExpirationDate <= nextMonth && b.ExpirationDate > today)
+                .Select(batch => new BatchDTO
+                {
+                    BatchId = batch.BatchId,
+                    BatchCode = batch.BatchCode,
+                    ExpirationDate = batch.ExpirationDate.ToString("yyyy-MM-dd")
+                })
+                .ToListAsync();
+
+            return Ok(expiringSoonBatches);
+        }
+
         // GET: api/Batches/checkBatchCode/{batchCode}
         [HttpGet("checkBatchCode/{batchCode}")]
         public async Task<IActionResult> CheckBatchCodeExists(string batchCode)
