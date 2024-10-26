@@ -194,6 +194,28 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
+        // GET: api/Shelves/Warehouse/{warehouseId}
+        // Obtener estantes por ID de almacén
+        [HttpGet("Warehouse/{warehouseId}")]
+        public async Task<ActionResult<IEnumerable<ShelfDTO>>> GetShelvesByWarehouse(int warehouseId)
+        {
+            var shelves = await _context.Shelves
+                .Where(s => s.WarehouseId == warehouseId && s.IsDeleted == "0")
+                .Select(s => new ShelfDTO
+                {
+                    ShelfId = s.ShelfId,
+                    NameShelf = s.NameShelf,
+                    WarehouseName = _context.Warehouses
+                        .Where(w => w.WarehouseId == s.WarehouseId)
+                        .Select(w => w.NameWarehouse)
+                        .FirstOrDefault() ?? "N/A"
+                })
+                .ToListAsync();
+
+            return Ok(shelves);
+        }
+
+
         // Verificar si existe un estante
         [HttpGet("CheckShelfExists")]
         public IActionResult CheckShelfExists(string nameShelf)
