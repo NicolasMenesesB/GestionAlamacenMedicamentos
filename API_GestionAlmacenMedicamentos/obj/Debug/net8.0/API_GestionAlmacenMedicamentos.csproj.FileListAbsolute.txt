@@ -510,3 +510,5 @@ D:\ProyectoGrado_GestionAlmacenMedicamentos\API_GestionAlmacenMedicamentos\obj\D
 D:\ProyectoGrado_GestionAlmacenMedicamentos\API_GestionAlmacenMedicamentos\obj\Debug\net8.0\API_GestionAlmacenMedicamentos.pdb
 D:\ProyectoGrado_GestionAlmacenMedicamentos\API_GestionAlmacenMedicamentos\obj\Debug\net8.0\API_GestionAlmacenMedicamentos.genruntimeconfig.cache
 D:\ProyectoGrado_GestionAlmacenMedicamentos\API_GestionAlmacenMedicamentos\obj\Debug\net8.0\ref\API_GestionAlmacenMedicamentos.dll
+D:\ProyectoGrado_GestionAlmacenMedicamentos\API_GestionAlmacenMedicamentos\bin\Debug\net8.0\Microsoft.Extensions.DependencyInjection.dll
+D:\ProyectoGrado_GestionAlmacenMedicamentos\API_GestionAlmacenMedicamentos\bin\Debug\net8.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll

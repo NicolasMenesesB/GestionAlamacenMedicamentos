@@ -44,6 +44,9 @@ public partial class DbGestionAlmacenMedicamentosContext : DbContext
 
     public virtual DbSet<Warehouse> Warehouses { get; set; }
 
+    public virtual DbSet<UserWarehouse> UserWarehouses { get; set; }
+
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseSqlServer("Data Source=DESKTOP-4UGNMD5\\SQLEXPRESS;Initial Catalog=DB_GestionAlmacenMedicamentos;Integrated Security=True;TrustServerCertificate=True");
 
@@ -525,6 +528,40 @@ public partial class DbGestionAlmacenMedicamentosContext : DbContext
                 .HasColumnName("updated_at");
             entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
         });
+
+        modelBuilder.Entity<UserWarehouse>(entity =>
+        {
+            entity.ToTable("User_Warehouse");
+
+            entity.HasKey(e => e.UserWarehouseId).HasName("PK_UserWarehouse");
+
+            entity.Property(e => e.UserWarehouseId).HasColumnName("User_Warehouse_ID");
+
+            entity.Property(e => e.UserId).HasColumnName("user_ID");
+            entity.Property(e => e.WarehouseId).HasColumnName("warehouse_ID");
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("created_at");
+
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("datetime")
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnName("updated_at");
+
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+
+            entity.Property(e => e.IsDeleted)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasDefaultValueSql("((0))")
+                .IsFixedLength()
+                .HasColumnName("is_deleted");
+        });
+
 
         OnModelCreatingPartial(modelBuilder);
     }
