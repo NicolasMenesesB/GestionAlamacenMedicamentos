@@ -1,23 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.IO;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using API_GestionAlmacenMedicamentos.Data;
+using API_GestionAlmacenMedicamentos.DTOs.PersonDTOs;
 using API_GestionAlmacenMedicamentos.Models;
-using API_GestionAlmacenMedicamentos.DTOs;
 using BCrypt.Net;
 using System.Data.SqlTypes;
-using API_GestionAlmacenMedicamentos.DTOs.PersonDTOs;
-using Microsoft.AspNetCore.Authorization;
 
 namespace API_GestionAlmacenMedicamentos.Controllers
 {
-    [Authorize] 
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class PeopleController : ControllerBase
@@ -147,7 +146,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 UserId = person.PersonId,  // Aquí asignamos el PersonId como UserId
                 UserName = userName,
                 Password = hashedPassword,
-                Role = createPersonDTO.Role, 
+                Role = createPersonDTO.Role,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = 1, // Ajusta esto según tu lógica de negocio
                 IsDeleted = "0"
@@ -156,6 +155,28 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             // Guardamos el usuario
             _context.Users.Add(user);
             await _context.SaveChangesAsync(); // Guardar el usuario
+
+            // Asignar el usuario al almacén correspondiente
+            var warehouse = await _context.Warehouses
+                .FirstOrDefaultAsync(w => w.NameWarehouse == createPersonDTO.WarehouseName);
+
+            if (warehouse == null)
+            {
+                return BadRequest("El almacén especificado no existe.");
+            }
+
+            var userWarehouse = new UserWarehouse
+            {
+                UserId = user.UserId,
+                WarehouseId = warehouse.WarehouseId,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = 1,
+                IsDeleted = "0"
+            };
+
+            // Guardar UserWarehouse en la base de datos
+            _context.UserWarehouses.Add(userWarehouse);
+            await _context.SaveChangesAsync();
 
             // Devolver los detalles de la persona creada
             var personDTO = new PersonDTO
@@ -176,8 +197,6 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
             return CreatedAtAction("GetPerson", new { id = person.PersonId }, personDTO);
         }
-
-
 
         // PUT: api/People/5
         [HttpPut("{id}")]

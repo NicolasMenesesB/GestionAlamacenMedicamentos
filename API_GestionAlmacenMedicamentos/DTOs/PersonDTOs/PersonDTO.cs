@@ -8,14 +8,12 @@
         public string? SecondLastName { get; set; }
         public string? PhoneNumber { get; set; }
         public string CellPhoneNumber { get; set; } = null!;
-
-        // El DTO de Person mantiene la foto como una cadena de URL, para evitar manejar el archivo
         public string? Photo { get; set; }
-
         public string Gender { get; set; } = null!;
         public DateTime Birthdate { get; set; }
         public string Address { get; set; } = null!;
         public string Ci { get; set; } = null!;
         public string Email { get; set; } = null!;
+        public string WarehouseName { get; set; } = null!;
     }
 }

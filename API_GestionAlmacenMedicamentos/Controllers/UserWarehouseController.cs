@@ -30,6 +30,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 .Select(uw => new
                 {
                     uw.UserWarehouseId,
+                    uw.UserId, // Incluyendo el UserId para mapeo en frontend
                     UserName = uw.User.UserName,
                     WarehouseName = uw.Warehouse.NameWarehouse,
                     uw.CreatedAt
@@ -48,6 +49,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 .Select(uw => new
                 {
                     uw.UserWarehouseId,
+                    uw.UserId, // Incluyendo el UserId aquí también
                     UserName = uw.User.UserName,
                     WarehouseName = uw.Warehouse.NameWarehouse,
                     uw.CreatedAt,
@@ -63,7 +65,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             return Ok(userWarehouse);
         }
 
-        // POST: api/UserWarehouse
+        // POST: api/UserWarehouse/assign
         [HttpPost("assign")]
         public async Task<IActionResult> AssignUserToWarehouse(int userId, int warehouseId)
         {
@@ -81,26 +83,22 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 return NotFound(new { Message = "El almacén no existe." });
             }
 
-            // Verificar el rol del usuario
-            if (user.Role == "2") // Empleado de almacén
-            {
-                // Verificar si el empleado ya está asignado a un almacén
-                var existingAssignment = await _context.UserWarehouses
-                    .AnyAsync(uw => uw.UserId == userId);
+            // Verificar si el usuario ya está asignado a un almacén
+            var existingAssignment = await _context.UserWarehouses
+                .AnyAsync(uw => uw.UserId == userId && uw.IsDeleted == "0");
 
-                if (existingAssignment)
-                {
-                    return BadRequest(new { Message = "Un empleado de almacén solo puede estar asignado a un único almacén." });
-                }
+            if (existingAssignment)
+            {
+                return BadRequest(new { Message = "El usuario solo puede estar asignado a un único almacén." });
             }
 
-            // Asignación para cualquier usuario (administrador, jefe de almacén, empleado)
+            // Asignación para el usuario
             var userWarehouse = new UserWarehouse
             {
                 UserId = userId,
                 WarehouseId = warehouseId,
                 CreatedAt = DateTime.Now,
-                CreatedBy = 8, // Supongamos que el administrador es el creador
+                CreatedBy = 8,
                 IsDeleted = "0"
             };
 
