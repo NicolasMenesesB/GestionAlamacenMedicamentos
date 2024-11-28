@@ -13,10 +13,11 @@ using API_GestionAlmacenMedicamentos.DTOs.PersonDTOs;
 using API_GestionAlmacenMedicamentos.Models;
 using BCrypt.Net;
 using System.Data.SqlTypes;
+using System.Security.Claims;
 
 namespace API_GestionAlmacenMedicamentos.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "0,1")]
     [Route("api/[controller]")]
     [ApiController]
     public class PeopleController : ControllerBase
@@ -30,39 +31,55 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             _env = env;
         }
 
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return userIdClaim != null ? int.Parse(userIdClaim) : 0;
+        }
+
         // GET: api/People
         [HttpGet]
+        [Authorize(Roles = "0,1")] // Permitir acceso solo a roles 0 (admin) y 1 (gerente)
         public async Task<ActionResult<IEnumerable<PersonDTO>>> GetPeople()
         {
-            return await _context.People
-                .Where(p => p.IsDeleted == "0")
-                .Select(p => new PersonDTO
-                {
-                    PersonId = p.PersonId,
-                    Names = p.Names,
-                    LastName = p.LastName,
-                    SecondLastName = p.SecondLastName,
-                    PhoneNumber = p.PhoneNumber,
-                    CellPhoneNumber = p.CellPhoneNumber,
-                    Photo = p.Photo,
-                    Gender = p.Gender,
-                    Birthdate = p.Birthdate,
-                    Address = p.Address,
-                    Ci = p.Ci,
-                    Email = p.Email
-                })
-                .ToListAsync();
+            try
+            {
+                var people = await _context.People
+                    .Where(p => p.IsDeleted == "0")
+                    .Select(p => new PersonDTO
+                    {
+                        PersonId = p.PersonId,
+                        Names = p.Names,
+                        LastName = p.LastName,
+                        SecondLastName = p.SecondLastName,
+                        PhoneNumber = p.PhoneNumber,
+                        CellPhoneNumber = p.CellPhoneNumber,
+                        Photo = p.Photo,
+                        Gender = p.Gender,
+                        Birthdate = p.Birthdate,
+                        Address = p.Address,
+                        Ci = p.Ci,
+                        Email = p.Email
+                    })
+                    .ToListAsync();
+
+                return Ok(new { success = true, data = people });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = ex.Message });
+            }
         }
 
         // GET: api/People/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<PersonDTO>> GetPerson(int id)
+        public async Task<ActionResult> GetPerson(int id)
         {
             var person = await _context.People.FindAsync(id);
 
             if (person == null || person.IsDeleted == "1")
             {
-                return NotFound();
+                return NotFound(new { success = false, message = "Persona no encontrada" });
             }
 
             var personDTO = new PersonDTO
@@ -81,36 +98,43 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 Email = person.Email
             };
 
-            return personDTO;
+            return Ok(new { success = true, data = personDTO });
         }
 
         // POST: api/People
         [HttpPost]
-        public async Task<ActionResult<PersonDTO>> PostPerson([FromForm] CreatePersonDTO createPersonDTO)
+        [Authorize(Roles = "0,1")] // Permitir solo a roles admin y gerente crear personas
+        public async Task<ActionResult> PostPerson([FromForm] CreatePersonDTO createPersonDTO)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(new { success = false, message = "Datos inválidos", errors = ModelState });
             }
 
             string photoUrl = null;
 
-            // Si hay un archivo de foto, lo almacenamos en la carpeta 'Uploads'
+            // Guardar foto si existe
             if (createPersonDTO.Photo != null)
             {
-                var uploadsFolder = Path.Combine(_env.ContentRootPath, "Uploads");
-                Directory.CreateDirectory(uploadsFolder); // Crear la carpeta si no existe
-
-                var uniqueFileName = Guid.NewGuid().ToString() + "_" + createPersonDTO.Photo.FileName;
-                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                try
                 {
-                    await createPersonDTO.Photo.CopyToAsync(fileStream);
-                }
+                    var uploadsFolder = Path.Combine(_env.ContentRootPath, "Uploads");
+                    Directory.CreateDirectory(uploadsFolder);
 
-                // Guardamos la URL relativa en la base de datos
-                photoUrl = Path.Combine("Uploads", uniqueFileName);
+                    var uniqueFileName = Guid.NewGuid().ToString() + "_" + createPersonDTO.Photo.FileName;
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await createPersonDTO.Photo.CopyToAsync(fileStream);
+                    }
+
+                    photoUrl = Path.Combine("Uploads", uniqueFileName);
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = "Error al guardar la foto", details = ex.Message });
+                }
             }
 
             // Crear el objeto Persona
@@ -128,74 +152,61 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 Ci = createPersonDTO.Ci,
                 Email = createPersonDTO.Email,
                 CreatedAt = DateTime.UtcNow,
-                CreatedBy = 1, // Ajusta esto según tu lógica de negocio
+                CreatedBy = GetCurrentUserId(),
                 IsDeleted = "0"
             };
 
-            // Guardamos primero la persona
-            _context.People.Add(person);
-            await _context.SaveChangesAsync(); // Esto generará el PersonId
-
-            // Crear el objeto Usuario utilizando el mismo ID que el PersonId
-            var userName = GenerateUserName(person.Names, person.LastName, person.Ci);
-            var password = GeneratePassword(person.Names, person.LastName, person.Ci);
-            var hashedPassword = BCrypt.Net.BCrypt.HashPassword(password); // Hashear la contraseña
-
-            var user = new User
+            try
             {
-                UserId = person.PersonId,  // Aquí asignamos el PersonId como UserId
-                UserName = userName,
-                Password = hashedPassword,
-                Role = createPersonDTO.Role,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = 1, // Ajusta esto según tu lógica de negocio
-                IsDeleted = "0"
-            };
+                _context.People.Add(person);
+                await _context.SaveChangesAsync();
 
-            // Guardamos el usuario
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync(); // Guardar el usuario
+                // Crear usuario relacionado
+                var userName = GenerateUserName(person.Names, person.LastName, person.Ci);
+                var password = GeneratePassword(person.Names, person.LastName, person.Ci);
+                var hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
 
-            // Asignar el usuario al almacén correspondiente
-            var warehouse = await _context.Warehouses
-                .FirstOrDefaultAsync(w => w.NameWarehouse == createPersonDTO.WarehouseName);
+                var user = new User
+                {
+                    UserId = person.PersonId,
+                    UserName = userName,
+                    Password = hashedPassword,
+                    Role = createPersonDTO.Role,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = GetCurrentUserId(),
+                    IsDeleted = "0"
+                };
 
-            if (warehouse == null)
-            {
-                return BadRequest("El almacén especificado no existe.");
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+
+                // Asignar almacén si corresponde
+                var warehouse = await _context.Warehouses
+                    .FirstOrDefaultAsync(w => w.NameWarehouse == createPersonDTO.WarehouseName);
+
+                if (warehouse == null)
+                {
+                    return BadRequest(new { success = false, message = "El almacén especificado no existe" });
+                }
+
+                var userWarehouse = new UserWarehouse
+                {
+                    UserId = user.UserId,
+                    WarehouseId = warehouse.WarehouseId,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = GetCurrentUserId(),
+                    IsDeleted = "0"
+                };
+
+                _context.UserWarehouses.Add(userWarehouse);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction("GetPerson", new { id = person.PersonId }, new { success = true, data = person });
             }
-
-            var userWarehouse = new UserWarehouse
+            catch (Exception ex)
             {
-                UserId = user.UserId,
-                WarehouseId = warehouse.WarehouseId,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = 1,
-                IsDeleted = "0"
-            };
-
-            // Guardar UserWarehouse en la base de datos
-            _context.UserWarehouses.Add(userWarehouse);
-            await _context.SaveChangesAsync();
-
-            // Devolver los detalles de la persona creada
-            var personDTO = new PersonDTO
-            {
-                PersonId = person.PersonId,
-                Names = person.Names,
-                LastName = person.LastName,
-                SecondLastName = person.SecondLastName,
-                PhoneNumber = person.PhoneNumber,
-                CellPhoneNumber = person.CellPhoneNumber,
-                Photo = person.Photo,
-                Gender = person.Gender,
-                Birthdate = person.Birthdate,
-                Address = person.Address,
-                Ci = person.Ci,
-                Email = person.Email
-            };
-
-            return CreatedAtAction("GetPerson", new { id = person.PersonId }, personDTO);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = "Error al crear la persona", details = ex.Message });
+            }
         }
 
         // PUT: api/People/5

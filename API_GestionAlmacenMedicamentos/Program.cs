@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.FileProviders;
 using System.IO;
 using System.Text;
+using API_GestionAlmacenMedicamentos.Middlewares; // Importar el namespace del middleware
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -105,6 +106,9 @@ app.UseCors("AllowAllOrigins");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Registrar el middleware personalizado para roles y almacenes
+app.UseMiddleware<RoleWarehouseMiddleware>();
 
 // Servir archivos estáticos desde la carpeta 'Uploads'
 app.UseStaticFiles(new StaticFileOptions

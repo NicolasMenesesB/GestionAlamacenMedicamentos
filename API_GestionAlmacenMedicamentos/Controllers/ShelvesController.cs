@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using API_GestionAlmacenMedicamentos.Data;
 using API_GestionAlmacenMedicamentos.Models;
 using API_GestionAlmacenMedicamentos.DTOs.ShelfDTOs;
-using System.Data.SqlTypes;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 
@@ -26,43 +25,89 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             _context = context;
         }
 
+        private int GetCurrentUserId()
+        {
+            return int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? "0");
+        }
+
+        private string GetCurrentUserRole()
+        {
+            return User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value ?? string.Empty;
+        }
+
+        private int? GetCurrentWarehouseId()
+        {
+            var warehouseId = User.Claims.FirstOrDefault(c => c.Type == "WarehouseId")?.Value;
+            return string.IsNullOrEmpty(warehouseId) ? null : int.Parse(warehouseId);
+        }
+
         // GET: api/Shelves
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ShelfDTO>>> GetShelves()
         {
-            return await _context.Shelves
-                 .Where(s => s.IsDeleted == "0")
-                 .Select(s => new ShelfDTO
-                 {
-                     ShelfId = s.ShelfId,
-                     NameShelf = s.NameShelf,
-                     WarehouseName = _context.Warehouses
-                        .Where(w => w.WarehouseId == s.WarehouseId)
-                        .Select(w => w.NameWarehouse)
-                        .FirstOrDefault() ?? "N/A"
-                 })
-                 .ToListAsync();
+            try
+            {
+                // Obtener el ID del almacén actual desde el token
+                var currentWarehouseId = GetCurrentWarehouseId();
+
+                if (currentWarehouseId == null && GetCurrentUserRole() != "0") // Solo Admin puede ver todos
+                {
+                    return Forbid("Acceso denegado: no se puede determinar el almacén del usuario.");
+                }
+
+                var shelves = await _context.Shelves
+                    .Where(s => s.IsDeleted == "0" && (s.WarehouseId == currentWarehouseId || GetCurrentUserRole() == "0"))
+                    .Select(s => new ShelfDTO
+                    {
+                        ShelfId = s.ShelfId,
+                        NameShelf = s.NameShelf,
+                        WarehouseName = _context.Warehouses
+                            .Where(w => w.WarehouseId == s.WarehouseId)
+                            .Select(w => w.NameWarehouse)
+                            .FirstOrDefault() ?? "N/A"
+                    })
+                    .ToListAsync();
+
+                return Ok(shelves);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al obtener los estantes: {ex.Message}");
+            }
         }
 
         // GET: api/Shelves/5
         [HttpGet("{id}")]
         public async Task<ActionResult<ShelfDTO>> GetShelf(int id)
         {
-            var shelf = await _context.Shelves.FindAsync(id);
-
-            if (shelf == null || shelf.IsDeleted == "1")
+            try
             {
-                return NotFound();
+                var shelf = await _context.Shelves.FindAsync(id);
+
+                if (shelf == null || shelf.IsDeleted == "1")
+                {
+                    return NotFound("Estante no encontrado.");
+                }
+
+                // Validar si el usuario tiene acceso al almacén del estante
+                if (GetCurrentUserRole() != "0" && shelf.WarehouseId != GetCurrentWarehouseId())
+                {
+                    return Forbid("Acceso denegado: no tiene permisos para este almacén.");
+                }
+
+                var shelfDTO = new ShelfDTO
+                {
+                    ShelfId = shelf.ShelfId,
+                    NameShelf = shelf.NameShelf,
+                    WarehouseName = _context.Warehouses.FirstOrDefault(w => w.WarehouseId == shelf.WarehouseId)?.NameWarehouse
+                };
+
+                return Ok(shelfDTO);
             }
-
-            var shelfDTO = new ShelfDTO
+            catch (Exception ex)
             {
-                ShelfId = shelf.ShelfId,
-                NameShelf = shelf.NameShelf,
-                WarehouseName = _context.Warehouses.FirstOrDefault(w => w.WarehouseId == shelf.WarehouseId)?.NameWarehouse  
-            };
-
-            return shelfDTO;
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al obtener el estante: {ex.Message}");
+            }
         }
 
         // POST: api/Shelves
@@ -76,7 +121,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
             try
             {
-                // Buscar el ID del almacén usando el nombre
+                // Buscar el almacén por nombre
                 var warehouse = await _context.Warehouses.FirstOrDefaultAsync(w => w.NameWarehouse == createShelfDTO.WarehouseName);
 
                 if (warehouse == null)
@@ -84,12 +129,18 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     return BadRequest("El almacén proporcionado no existe.");
                 }
 
-                var userId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+                // Validar si el usuario tiene acceso al almacén
+                if (GetCurrentUserRole() != "0" && warehouse.WarehouseId != GetCurrentWarehouseId())
+                {
+                    return Forbid("Acceso denegado: no tiene permisos para este almacén.");
+                }
+
+                var userId = GetCurrentUserId();
 
                 var shelf = new Shelf
                 {
                     NameShelf = createShelfDTO.NameShelf,
-                    WarehouseId = warehouse.WarehouseId,  // Asignar el ID del almacén
+                    WarehouseId = warehouse.WarehouseId,
                     CreatedAt = DateTime.UtcNow,
                     CreatedBy = userId,
                     IsDeleted = "0"
@@ -105,11 +156,11 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     WarehouseName = warehouse.NameWarehouse
                 };
 
-                return CreatedAtAction("GetShelf", new { id = shelf.ShelfId }, shelfDTO);
+                return CreatedAtAction(nameof(GetShelf), new { id = shelf.ShelfId }, shelfDTO);
             }
             catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al crear el estante: {ex.Message} - {ex.InnerException?.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al crear el estante: {ex.Message}");
             }
         }
 
@@ -123,10 +174,9 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
                 if (shelf == null || shelf.IsDeleted == "1")
                 {
-                    return NotFound();
+                    return NotFound("Estante no encontrado.");
                 }
 
-                // Buscar el ID del almacén usando el nombre
                 var warehouse = await _context.Warehouses.FirstOrDefaultAsync(w => w.NameWarehouse == updateShelfDTO.WarehouseName);
 
                 if (warehouse == null)
@@ -134,30 +184,27 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     return BadRequest("El almacén proporcionado no existe.");
                 }
 
-                var userId = int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+                // Validar si el usuario tiene acceso al almacén
+                if (GetCurrentUserRole() != "0" && warehouse.WarehouseId != GetCurrentWarehouseId())
+                {
+                    return Forbid("Acceso denegado: no tiene permisos para este almacén.");
+                }
+
+                var userId = GetCurrentUserId();
 
                 shelf.NameShelf = updateShelfDTO.NameShelf;
-                shelf.WarehouseId = warehouse.WarehouseId;  // Asignar el ID del almacén
+                shelf.WarehouseId = warehouse.WarehouseId;
                 shelf.UpdatedAt = DateTime.UtcNow;
                 shelf.UpdatedBy = userId;
 
                 _context.Entry(shelf).State = EntityState.Modified;
-
                 await _context.SaveChangesAsync();
 
                 return NoContent();
             }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error de concurrencia al actualizar el estante: {ex.Message}");
-            }
-            catch (SqlTypeException ex)
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, $"Error de tipo SQL al actualizar el estante: {ex.Message}");
-            }
             catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error interno al actualizar el estante: {ex.Message} - {ex.InnerException?.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al actualizar el estante: {ex.Message}");
             }
         }
 
@@ -168,9 +215,16 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             try
             {
                 var shelf = await _context.Shelves.FindAsync(id);
-                if (shelf == null)
+
+                if (shelf == null || shelf.IsDeleted == "1")
                 {
-                    return NotFound();
+                    return NotFound("Estante no encontrado.");
+                }
+
+                // Validar si el usuario tiene acceso al almacén
+                if (GetCurrentUserRole() != "0" && shelf.WarehouseId != GetCurrentWarehouseId())
+                {
+                    return Forbid("Acceso denegado: no tiene permisos para este almacén.");
                 }
 
                 shelf.IsDeleted = "1";
@@ -180,62 +234,10 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
                 return NoContent();
             }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error de concurrencia al eliminar el estante: {ex.Message}");
-            }
-            catch (SqlTypeException ex)
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, $"Error de tipo SQL al eliminar el estante: {ex.Message}");
-            }
             catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error interno al eliminar el estante: {ex.Message} - {ex.InnerException?.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al eliminar el estante: {ex.Message}");
             }
-        }
-
-        // GET: api/Shelves/Warehouse/{warehouseId}
-        // Obtener estantes por ID de almacén
-        [HttpGet("Warehouse/{warehouseId}")]
-        public async Task<ActionResult<IEnumerable<ShelfDTO>>> GetShelvesByWarehouse(int warehouseId)
-        {
-            var shelves = await _context.Shelves
-                .Where(s => s.WarehouseId == warehouseId && s.IsDeleted == "0")
-                .Select(s => new ShelfDTO
-                {
-                    ShelfId = s.ShelfId,
-                    NameShelf = s.NameShelf,
-                    WarehouseName = _context.Warehouses
-                        .Where(w => w.WarehouseId == s.WarehouseId)
-                        .Select(w => w.NameWarehouse)
-                        .FirstOrDefault() ?? "N/A"
-                })
-                .ToListAsync();
-
-            return Ok(shelves);
-        }
-
-
-        // Verificar si existe un estante
-        [HttpGet("CheckShelfExists")]
-        public IActionResult CheckShelfExists(string nameShelf)
-        {
-            var shelfExists = _context.Shelves
-                .Any(s => s.NameShelf.ToLower() == nameShelf.ToLower() && s.IsDeleted == "0");
-
-            return Ok(new { shelfExists });
-        }
-
-        // Verificar si existe un estante en un almacén específico
-        [HttpGet("CheckShelfExistsInWarehouse")]
-        public IActionResult CheckShelfExistsInWarehouse(string nameShelf, string warehouseName)
-        {
-            var shelfExists = _context.Shelves
-                .Any(s => s.NameShelf.ToLower() == nameShelf.ToLower()
-                          && s.Warehouse.NameWarehouse.ToLower() == warehouseName.ToLower()
-                          && s.IsDeleted == "0");
-
-            return Ok(new { shelfExists });
         }
 
         private bool ShelfExists(int id)

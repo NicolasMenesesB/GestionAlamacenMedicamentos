@@ -25,50 +25,98 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             _context = context;
         }
 
+        private int GetCurrentUserId()
+        {
+            return int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? "0");
+        }
+
+        private string GetCurrentUserRole()
+        {
+            return User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value ?? string.Empty;
+        }
+
+        private int? GetCurrentWarehouseId()
+        {
+            var warehouseId = User.Claims.FirstOrDefault(c => c.Type == "WarehouseId")?.Value;
+            return string.IsNullOrEmpty(warehouseId) ? null : int.Parse(warehouseId);
+        }
+
         // GET: api/Movements
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MovementDTO>>> GetMovements()
         {
-            return await _context.Movements
-                .Include(m => m.TypeOfMovement)
-                .Include(m => m.Batch)
-                .Where(m => m.IsDeleted == "0")
-                .Select(m => new MovementDTO
+            try
+            {
+                var currentWarehouseId = GetCurrentWarehouseId();
+
+                if (currentWarehouseId == null && GetCurrentUserRole() != "0")
                 {
-                    MovementId = m.MovementId,
-                    Quantity = m.Quantity,
-                    DateOfMoviment = m.DateOfMoviment.ToString("yyyy-MM-dd"),
-                    NameOfMovement = m.TypeOfMovement.NameOfMovement,
-                    BatchCode = m.Batch.BatchCode
-                })
-                .ToListAsync();
+                    return Forbid("Acceso denegado: no se puede determinar el almacén del usuario.");
+                }
+
+                var movements = await _context.Movements
+                    .Include(m => m.TypeOfMovement)
+                    .Include(m => m.Batch)
+                        .ThenInclude(b => b.MedicationHandlingUnit)
+                            .ThenInclude(mhu => mhu.Shelf)
+                    .Where(m => m.IsDeleted == "0" &&
+                                (m.Batch.MedicationHandlingUnit.Shelf.WarehouseId == currentWarehouseId || GetCurrentUserRole() == "0"))
+                    .Select(m => new MovementDTO
+                    {
+                        MovementId = m.MovementId,
+                        Quantity = m.Quantity,
+                        DateOfMoviment = m.DateOfMoviment.ToString("yyyy-MM-dd"),
+                        NameOfMovement = m.TypeOfMovement.NameOfMovement,
+                        BatchCode = m.Batch.BatchCode
+                    })
+                    .ToListAsync();
+
+                return Ok(movements);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al obtener los movimientos: {ex.Message}");
+            }
         }
 
         // GET: api/Movements/5
         [HttpGet("{id}")]
         public async Task<ActionResult<MovementDTO>> GetMovement(int id)
         {
-            var movement = await _context.Movements
-                .Include(m => m.TypeOfMovement)
-                .Include(m => m.Batch)
-                .Where(m => m.IsDeleted == "0" && m.MovementId == id)
-                .FirstOrDefaultAsync();
-
-            if (movement == null)
+            try
             {
-                return NotFound();
+                var movement = await _context.Movements
+                    .Include(m => m.TypeOfMovement)
+                    .Include(m => m.Batch)
+                        .ThenInclude(b => b.MedicationHandlingUnit)
+                            .ThenInclude(mhu => mhu.Shelf)
+                    .FirstOrDefaultAsync(m => m.MovementId == id && m.IsDeleted == "0");
+
+                if (movement == null)
+                {
+                    return NotFound("Movimiento no encontrado.");
+                }
+
+                if (GetCurrentUserRole() != "0" && movement.Batch.MedicationHandlingUnit.Shelf.WarehouseId != GetCurrentWarehouseId())
+                {
+                    return Forbid("Acceso denegado: no tiene permisos para este almacén.");
+                }
+
+                var movementDTO = new MovementDTO
+                {
+                    MovementId = movement.MovementId,
+                    Quantity = movement.Quantity,
+                    DateOfMoviment = movement.DateOfMoviment.ToString("yyyy-MM-dd"),
+                    NameOfMovement = movement.TypeOfMovement.NameOfMovement,
+                    BatchCode = movement.Batch.BatchCode
+                };
+
+                return Ok(movementDTO);
             }
-
-            var movementDTO = new MovementDTO
+            catch (Exception ex)
             {
-                MovementId = movement.MovementId,
-                Quantity = movement.Quantity,
-                DateOfMoviment = movement.DateOfMoviment.ToString("yyyy-MM-dd"),
-                NameOfMovement = movement.TypeOfMovement.NameOfMovement,
-                BatchCode = movement.Batch.BatchCode
-            };
-
-            return movementDTO;
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al obtener el movimiento: {ex.Message}");
+            }
         }
 
         // POST: api/Movements
@@ -80,75 +128,77 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 return BadRequest(ModelState);
             }
 
-            // Buscar el ID del tipo de movimiento por el nombre
-            var typeOfMovement = await _context.TypeOfMovements
-                .FirstOrDefaultAsync(t => t.NameOfMovement == createMovementDTO.NameOfMovement);
-
-            if (typeOfMovement == null)
+            try
             {
-                return BadRequest("Invalid TypeOfMovement");
-            }
+                var typeOfMovement = await _context.TypeOfMovements
+                    .FirstOrDefaultAsync(t => t.NameOfMovement == createMovementDTO.NameOfMovement);
 
-            // Buscar el lote por el código del lote
-            var batch = await _context.Batches
-                .FirstOrDefaultAsync(b => b.BatchCode == createMovementDTO.BatchCode);
-
-            if (batch == null)
-            {
-                return BadRequest("Invalid BatchCode");
-            }
-
-            // Obtener el ID del usuario autenticado
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-
-            // Crear el objeto Movement
-            var movement = new Movement
-            {
-                Quantity = createMovementDTO.Quantity,
-                DateOfMoviment = DateOnly.Parse(createMovementDTO.DateOfMoviment),
-                TypeOfMovementId = typeOfMovement.TypeOfMovementId,
-                BatchId = batch.BatchId,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = userId,
-                IsDeleted = "0"
-            };
-
-            // Validar si la cantidad solicitada excede la cantidad actual en el lote
-            if (createMovementDTO.Quantity > batch.CurrentQuantity)
-            {
-                return BadRequest("The quantity exceeds the available stock.");
-            }
-
-            // Actualizar la cantidad actual del lote
-            if (typeOfMovement.NameOfMovement.StartsWith("Salida"))
-            {
-                batch.CurrentQuantity -= movement.Quantity;
-                if (batch.CurrentQuantity <= batch.MinimumStock) // Alerta si llega al stock mínimo
+                if (typeOfMovement == null)
                 {
-                    // Registrar el movimiento pero con una alerta sobre el stock mínimo
-                    _context.Movements.Add(movement);
-                    await _context.SaveChangesAsync();
-                    return CreatedAtAction("GetMovement", new { id = movement.MovementId },
-                        new { Message = $"El lote {batch.BatchCode} ha alcanzado el stock mínimo.", Movement = movement });
+                    return BadRequest("Tipo de movimiento inválido.");
                 }
+
+                var batch = await _context.Batches
+                    .Include(b => b.MedicationHandlingUnit)
+                        .ThenInclude(mhu => mhu.Shelf)
+                    .FirstOrDefaultAsync(b => b.BatchCode == createMovementDTO.BatchCode);
+
+                if (batch == null || batch.IsDeleted == "1")
+                {
+                    return BadRequest("Código de lote inválido.");
+                }
+
+                if (GetCurrentUserRole() != "0" && batch.MedicationHandlingUnit.Shelf.WarehouseId != GetCurrentWarehouseId())
+                {
+                    return Forbid("Acceso denegado: no tiene permisos para este almacén.");
+                }
+
+                var userId = GetCurrentUserId();
+
+                if (typeOfMovement.NameOfMovement.StartsWith("Salida") && createMovementDTO.Quantity > batch.CurrentQuantity)
+                {
+                    return BadRequest("La cantidad excede el stock disponible.");
+                }
+
+                var movement = new Movement
+                {
+                    Quantity = createMovementDTO.Quantity,
+                    DateOfMoviment = DateOnly.Parse(createMovementDTO.DateOfMoviment),
+                    TypeOfMovementId = typeOfMovement.TypeOfMovementId,
+                    BatchId = batch.BatchId,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = userId,
+                    IsDeleted = "0"
+                };
+
+                if (typeOfMovement.NameOfMovement.StartsWith("Salida"))
+                {
+                    batch.CurrentQuantity -= createMovementDTO.Quantity;
+                }
+                else if (typeOfMovement.NameOfMovement.StartsWith("Entrada"))
+                {
+                    batch.CurrentQuantity += createMovementDTO.Quantity;
+                }
+
+                _context.Movements.Add(movement);
+                await _context.SaveChangesAsync();
+
+                var movementDTO = new MovementDTO
+                {
+                    MovementId = movement.MovementId,
+                    Quantity = movement.Quantity,
+                    DateOfMoviment = movement.DateOfMoviment.ToString("yyyy-MM-dd"),
+                    NameOfMovement = typeOfMovement.NameOfMovement,
+                    BatchCode = batch.BatchCode
+                };
+
+                return CreatedAtAction(nameof(GetMovement), new { id = movement.MovementId }, movementDTO);
             }
-
-            // Registrar el movimiento normalmente
-            _context.Movements.Add(movement);
-            await _context.SaveChangesAsync();
-
-            var movementDTO = new MovementDTO
+            catch (Exception ex)
             {
-                MovementId = movement.MovementId,
-                Quantity = movement.Quantity,
-                DateOfMoviment = movement.DateOfMoviment.ToString("yyyy-MM-dd"),
-                NameOfMovement = typeOfMovement.NameOfMovement,
-                BatchCode = batch.BatchCode
-            };
-
-            return CreatedAtAction("GetMovement", new { id = movement.MovementId }, movementDTO);
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al registrar el movimiento: {ex.Message}");
+            }
         }
-
 
         // PUT: api/Movements/5
         [HttpPut("{id}")]
@@ -157,106 +207,117 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             var movement = await _context.Movements
                 .Include(m => m.TypeOfMovement)
                 .Include(m => m.Batch)
+                    .ThenInclude(b => b.MedicationHandlingUnit)
+                        .ThenInclude(mhu => mhu.Shelf)
                 .Where(m => m.IsDeleted == "0" && m.MovementId == id)
                 .FirstOrDefaultAsync();
 
             if (movement == null)
             {
-                return NotFound();
+                return NotFound("Movimiento no encontrado.");
             }
 
-            // Buscar el tipo de movimiento por el nombre
-            var typeOfMovement = await _context.TypeOfMovements
-                .FirstOrDefaultAsync(t => t.NameOfMovement == updateMovementDTO.NameOfMovement);
-
-            if (typeOfMovement == null)
+            if (GetCurrentUserRole() != "0" && movement.Batch.MedicationHandlingUnit.Shelf.WarehouseId != GetCurrentWarehouseId())
             {
-                return BadRequest("Invalid TypeOfMovement");
+                return Forbid("Acceso denegado: no tiene permisos para este almacén.");
             }
-
-            // Buscar el lote por el código del lote
-            var batch = await _context.Batches
-                .FirstOrDefaultAsync(b => b.BatchCode == updateMovementDTO.BatchCode);
-
-            if (batch == null)
-            {
-                return BadRequest("Invalid BatchCode");
-            }
-
-            // Obtener el ID del usuario autenticado
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-
-            // Revertir el cambio anterior en el lote
-            if (movement.TypeOfMovement.NameOfMovement.StartsWith("Entrada"))
-            {
-                batch.CurrentQuantity -= movement.Quantity;
-            }
-            else if (movement.TypeOfMovement.NameOfMovement.StartsWith("Salida"))
-            {
-                batch.CurrentQuantity += movement.Quantity;
-            }
-
-            // Actualizar el movimiento y la cantidad en el lote
-            movement.Quantity = updateMovementDTO.Quantity;
-            movement.DateOfMoviment = DateOnly.Parse(updateMovementDTO.DateOfMoviment);
-            movement.TypeOfMovementId = typeOfMovement.TypeOfMovementId;
-            movement.BatchId = batch.BatchId;
-            movement.UpdatedAt = DateTime.UtcNow;
-            movement.UpdatedBy = userId;
-
-            if (typeOfMovement.NameOfMovement.StartsWith("Entrada"))
-            {
-                batch.CurrentQuantity += movement.Quantity;
-            }
-            else if (typeOfMovement.NameOfMovement.StartsWith("Salida"))
-            {
-                batch.CurrentQuantity -= movement.Quantity;
-                if (batch.CurrentQuantity < 0)
-                {
-                    return BadRequest("The quantity exceeds the available stock.");
-                }
-            }
-
-            _context.Entry(movement).State = EntityState.Modified;
 
             try
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Concurrency error: {ex.Message}");
-            }
+                var typeOfMovement = await _context.TypeOfMovements
+                    .FirstOrDefaultAsync(t => t.NameOfMovement == updateMovementDTO.NameOfMovement);
 
-            return NoContent();
+                if (typeOfMovement == null)
+                {
+                    return BadRequest("Tipo de movimiento inválido.");
+                }
+
+                var batch = await _context.Batches
+                    .Include(b => b.MedicationHandlingUnit)
+                        .ThenInclude(mhu => mhu.Shelf)
+                    .FirstOrDefaultAsync(b => b.BatchCode == updateMovementDTO.BatchCode);
+
+                if (batch == null || batch.IsDeleted == "1")
+                {
+                    return BadRequest("Código de lote inválido.");
+                }
+
+                // Revertir cambios anteriores
+                if (movement.TypeOfMovement.NameOfMovement.StartsWith("Salida"))
+                {
+                    batch.CurrentQuantity += movement.Quantity;
+                }
+                else if (movement.TypeOfMovement.NameOfMovement.StartsWith("Entrada"))
+                {
+                    batch.CurrentQuantity -= movement.Quantity;
+                }
+
+                movement.Quantity = updateMovementDTO.Quantity;
+                movement.DateOfMoviment = DateOnly.Parse(updateMovementDTO.DateOfMoviment);
+                movement.TypeOfMovementId = typeOfMovement.TypeOfMovementId;
+                movement.BatchId = batch.BatchId;
+                movement.UpdatedAt = DateTime.UtcNow;
+                movement.UpdatedBy = GetCurrentUserId();
+
+                // Aplicar cambios nuevos
+                if (typeOfMovement.NameOfMovement.StartsWith("Salida"))
+                {
+                    batch.CurrentQuantity -= updateMovementDTO.Quantity;
+                    if (batch.CurrentQuantity < 0)
+                    {
+                        return BadRequest("La cantidad excede el stock disponible.");
+                    }
+                }
+                else if (typeOfMovement.NameOfMovement.StartsWith("Entrada"))
+                {
+                    batch.CurrentQuantity += updateMovementDTO.Quantity;
+                }
+
+                _context.Entry(movement).State = EntityState.Modified;
+                await _context.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al actualizar el movimiento: {ex.Message}");
+            }
         }
 
         // DELETE: api/Movements/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteMovement(int id)
         {
-            var movement = await _context.Movements.FindAsync(id);
-            if (movement == null)
-            {
-                return NotFound();
-            }
-
-            // Marcar como eliminado
-            movement.IsDeleted = "1";
-            movement.UpdatedAt = DateTime.UtcNow;
-
-            _context.Entry(movement).State = EntityState.Modified;
-
             try
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Concurrency error: {ex.Message}");
-            }
+                var movement = await _context.Movements
+                    .Include(m => m.Batch)
+                        .ThenInclude(b => b.MedicationHandlingUnit)
+                            .ThenInclude(mhu => mhu.Shelf)
+                    .FirstOrDefaultAsync(m => m.MovementId == id);
 
-            return NoContent();
+                if (movement == null || movement.IsDeleted == "1")
+                {
+                    return NotFound("Movimiento no encontrado.");
+                }
+
+                if (GetCurrentUserRole() != "0" && movement.Batch.MedicationHandlingUnit.Shelf.WarehouseId != GetCurrentWarehouseId())
+                {
+                    return Forbid("Acceso denegado: no tiene permisos para este almacén.");
+                }
+
+                movement.IsDeleted = "1";
+                movement.UpdatedAt = DateTime.UtcNow;
+
+                _context.Entry(movement).State = EntityState.Modified;
+                await _context.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al eliminar el movimiento: {ex.Message}");
+            }
         }
     }
 }
