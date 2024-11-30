@@ -89,36 +89,31 @@ namespace API_GestionAlmacenMedicamentos.Controllers
         {
             try
             {
-                var batch = await _context.Batches
-                    .Include(b => b.MedicationHandlingUnit)
-                        .ThenInclude(mhu => mhu.Shelf)
-                    .Include(b => b.Supplier)
-                    .FirstOrDefaultAsync(b => b.BatchId == id && b.IsDeleted == "0");
+                var currentWarehouseId = GetCurrentWarehouseId();
 
-                if (batch == null)
+                var batchDTO = await _context.Batches
+                    .Where(b => b.BatchId == id && b.IsDeleted == "0" &&
+                                (b.MedicationHandlingUnit.Shelf.WarehouseId == currentWarehouseId || GetCurrentUserRole() == "0"))
+                    .Select(batch => new BatchDTO
+                    {
+                        BatchId = batch.BatchId,
+                        BatchCode = batch.BatchCode,
+                        FabricationDate = batch.FabricationDate.ToString("yyyy-MM-dd"),
+                        ExpirationDate = batch.ExpirationDate.ToString("yyyy-MM-dd"),
+                        InitialQuantity = batch.InitialQuantity,
+                        CurrentQuantity = batch.CurrentQuantity,
+                        MinimumStock = batch.MinimumStock,
+                        MedicationHandlingUnitName = batch.MedicationHandlingUnit.HandlingUnit.NameUnit ?? "N/A",
+                        SupplierName = batch.Supplier.NameSupplier ?? "N/A"
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (batchDTO == null)
                 {
                     return NotFound();
                 }
 
-                if (GetCurrentUserRole() != "0" && batch.MedicationHandlingUnit.Shelf.WarehouseId != GetCurrentWarehouseId())
-                {
-                    return Forbid("Acceso denegado: no tiene permisos para este almacén.");
-                }
-
-                var batchDTO = new BatchDTO
-                {
-                    BatchId = batch.BatchId,
-                    BatchCode = batch.BatchCode,
-                    FabricationDate = batch.FabricationDate.ToString("yyyy-MM-dd"),
-                    ExpirationDate = batch.ExpirationDate.ToString("yyyy-MM-dd"),
-                    InitialQuantity = batch.InitialQuantity,
-                    CurrentQuantity = batch.CurrentQuantity,
-                    MinimumStock = batch.MinimumStock,
-                    MedicationHandlingUnitName = batch.MedicationHandlingUnit.HandlingUnit.NameUnit,
-                    SupplierName = batch.Supplier.NameSupplier
-                };
-
-                return batchDTO;
+                return Ok(batchDTO);
             }
             catch (Exception ex)
             {
@@ -213,31 +208,46 @@ namespace API_GestionAlmacenMedicamentos.Controllers
         {
             try
             {
+                // Buscar el lote junto con su unidad de manejo y estante relacionado
                 var batch = await _context.Batches
-                    .Include(b => b.MedicationHandlingUnit)
-                        .ThenInclude(mhu => mhu.Shelf)
-                    .FirstOrDefaultAsync(b => b.BatchId == id);
+                    .Include(b => b.MedicationHandlingUnit) // Incluir la unidad de manejo
+                        .ThenInclude(mhu => mhu.Shelf) // Incluir el estante
+                    .FirstOrDefaultAsync(b => b.BatchId == id && b.IsDeleted == "0");
 
-                if (batch == null || batch.IsDeleted == "1")
+                if (batch == null)
                 {
-                    return NotFound("Lote no encontrado.");
+                    return NotFound(new { success = false, message = "Lote no encontrado." });
                 }
 
+                // Verificar permisos del usuario
                 if (GetCurrentUserRole() != "0" && batch.MedicationHandlingUnit.Shelf.WarehouseId != GetCurrentWarehouseId())
                 {
-                    return Forbid("Acceso denegado: no tiene permisos para este almacén.");
+                    return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Acceso denegado: no tiene permisos para este almacén." });
                 }
 
+                // Eliminar lógicamente todos los movimientos asociados al lote
+                var movements = await _context.Movements
+                    .Where(m => m.BatchId == batch.BatchId && m.IsDeleted == "0")
+                    .ToListAsync();
+
+                foreach (var movement in movements)
+                {
+                    movement.IsDeleted = "1";
+                    movement.UpdatedAt = DateTime.UtcNow;
+                }
+
+                // Marcar el lote como eliminado lógicamente
                 batch.IsDeleted = "1";
                 batch.UpdatedAt = DateTime.UtcNow;
 
+                // Guardar los cambios en la base de datos
                 await _context.SaveChangesAsync();
 
                 return NoContent();
             }
             catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al eliminar el lote: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Error al eliminar el lote: {ex.Message}" });
             }
         }
 
@@ -264,6 +274,41 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 .ToListAsync();
 
             return Ok(expiringSoonBatches);
+        }
+
+        // GET: api/Warehouses/current
+        [HttpGet("currentWarehouse")]
+        public async Task<ActionResult> GetCurrentWarehouse()
+        {
+            var currentUserRole = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            if (currentUserRole != "0") // Si no es administrador
+            {
+                var currentWarehouseId = User.Claims.FirstOrDefault(c => c.Type == "WarehouseId")?.Value;
+                if (string.IsNullOrEmpty(currentWarehouseId))
+                {
+                    return NotFound("No se encontró el almacén para este usuario.");
+                }
+
+                var warehouse = await _context.Warehouses
+                    .Where(w => w.WarehouseId == int.Parse(currentWarehouseId) && w.IsDeleted == "0")
+                    .Select(w => new { w.WarehouseId, w.NameWarehouse })
+                    .FirstOrDefaultAsync();
+
+                if (warehouse == null)
+                {
+                    return NotFound("El almacén no existe o está eliminado.");
+                }
+
+                return Ok(warehouse);
+            }
+
+            // Si es administrador, retorna todos los almacenes
+            var warehouses = await _context.Warehouses
+                .Where(w => w.IsDeleted == "0")
+                .Select(w => new { w.WarehouseId, w.NameWarehouse })
+                .ToListAsync();
+
+            return Ok(warehouses);
         }
 
         // GET: api/Batches/checkBatchCode/{batchCode}

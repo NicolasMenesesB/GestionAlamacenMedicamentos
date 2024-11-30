@@ -240,6 +240,51 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
+        // GET: api/Shelves/Warehouse/{warehouseId}
+        [HttpGet("Warehouse/{warehouseId}")]
+        public async Task<ActionResult> GetShelvesByWarehouse(int warehouseId)
+        {
+            var shelves = await _context.Shelves
+                .Where(s => s.WarehouseId == warehouseId && s.IsDeleted == "0")
+                .Select(s => new { s.ShelfId, s.NameShelf })
+                .ToListAsync();
+
+            if (shelves == null || !shelves.Any())
+            {
+                return NotFound("No se encontraron estantes para este almacén.");
+            }
+
+            return Ok(shelves);
+        }
+
+        // GET: api/Shelves/CheckShelfExistsInWarehouse
+        [HttpGet("CheckShelfExistsInWarehouse")]
+        public async Task<IActionResult> CheckShelfExistsInWarehouse([FromQuery] string nameShelf, [FromQuery] string warehouseName)
+        {
+            try
+            {
+                // Buscar el almacén por nombre
+                var warehouse = await _context.Warehouses.FirstOrDefaultAsync(w => w.NameWarehouse == warehouseName);
+
+                if (warehouse == null)
+                {
+                    return BadRequest(new { success = false, message = "El almacén proporcionado no existe." });
+                }
+
+                // Verificar si el estante ya existe en el almacén
+                var shelfExists = await _context.Shelves.AnyAsync(s =>
+                    s.NameShelf == nameShelf &&
+                    s.WarehouseId == warehouse.WarehouseId &&
+                    s.IsDeleted == "0");
+
+                return Ok(new { shelfExists });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Error al verificar el estante: {ex.Message}" });
+            }
+        }
+
         private bool ShelfExists(int id)
         {
             return _context.Shelves.Any(e => e.ShelfId == id && e.IsDeleted == "0");

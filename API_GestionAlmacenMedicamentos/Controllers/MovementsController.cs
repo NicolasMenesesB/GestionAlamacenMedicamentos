@@ -290,25 +290,50 @@ namespace API_GestionAlmacenMedicamentos.Controllers
         {
             try
             {
+                // Buscar el movimiento junto con el lote y otros datos relacionados
                 var movement = await _context.Movements
                     .Include(m => m.Batch)
                         .ThenInclude(b => b.MedicationHandlingUnit)
                             .ThenInclude(mhu => mhu.Shelf)
-                    .FirstOrDefaultAsync(m => m.MovementId == id);
+                    .Include(m => m.TypeOfMovement) // Asegúrate de incluir la relación con TypeOfMovement
+                    .FirstOrDefaultAsync(m => m.MovementId == id && m.IsDeleted == "0");
 
-                if (movement == null || movement.IsDeleted == "1")
+                if (movement == null)
                 {
-                    return NotFound("Movimiento no encontrado.");
+                    // Devolver un resultado en formato JSON
+                    return NotFound(new { success = false, message = "Movimiento no encontrado." });
                 }
 
+                // Verificar si el usuario tiene permisos para acceder al almacén
                 if (GetCurrentUserRole() != "0" && movement.Batch.MedicationHandlingUnit.Shelf.WarehouseId != GetCurrentWarehouseId())
                 {
-                    return Forbid("Acceso denegado: no tiene permisos para este almacén.");
+                    return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Acceso denegado: no tiene permisos para este almacén." });
                 }
 
+                // Actualizar la cantidad actual del lote en función del tipo de movimiento
+                if (movement.TypeOfMovement?.NameOfMovement?.StartsWith("Salida") == true)
+                {
+                    movement.Batch.CurrentQuantity += movement.Quantity;
+                }
+                else if (movement.TypeOfMovement?.NameOfMovement?.StartsWith("Entrada") == true)
+                {
+                    movement.Batch.CurrentQuantity -= movement.Quantity;
+
+                    if (movement.Batch.CurrentQuantity < 0)
+                    {
+                        return BadRequest(new { success = false, message = "La cantidad actual del lote no puede ser negativa." });
+                    }
+                }
+                else
+                {
+                    return BadRequest(new { success = false, message = "El tipo de movimiento no es válido o no está definido." });
+                }
+
+                // Marcar el movimiento como eliminado lógicamente
                 movement.IsDeleted = "1";
                 movement.UpdatedAt = DateTime.UtcNow;
 
+                // Guardar los cambios en la base de datos
                 _context.Entry(movement).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
 
@@ -316,7 +341,8 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al eliminar el movimiento: {ex.Message}");
+                // Manejar errores inesperados
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Error al eliminar el movimiento: {ex.Message}" });
             }
         }
     }
