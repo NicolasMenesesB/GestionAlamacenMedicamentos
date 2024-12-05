@@ -75,6 +75,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult> GetPerson(int id)
         {
+            // Buscar la persona por ID
             var person = await _context.People.FindAsync(id);
 
             if (person == null || person.IsDeleted == "1")
@@ -82,6 +83,20 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 return NotFound(new { success = false, message = "Persona no encontrada" });
             }
 
+            // Obtener el rol del usuario asociado a esta persona
+            var role = await _context.Users
+                .Where(u => u.UserId == person.PersonId && u.IsDeleted == "0")
+                .Select(u => u.Role)
+                .FirstOrDefaultAsync();
+
+            // Obtener el nombre del almacén asignado al usuario
+            var warehouseName = await _context.UserWarehouses
+                .Where(uw => uw.UserId == person.PersonId && uw.IsDeleted == "0")
+                .Join(_context.Warehouses, uw => uw.WarehouseId, w => w.WarehouseId, (uw, w) => new { w.NameWarehouse })
+                .Select(w => w.NameWarehouse)
+                .FirstOrDefaultAsync();
+
+            // Construir el DTO para la respuesta
             var personDTO = new PersonDTO
             {
                 PersonId = person.PersonId,
@@ -95,7 +110,9 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 Birthdate = person.Birthdate,
                 Address = person.Address,
                 Ci = person.Ci,
-                Email = person.Email
+                Email = person.Email,
+                Role = role, // Rol del usuario
+                WarehouseName = warehouseName // Nombre del almacén
             };
 
             return Ok(new { success = true, data = personDTO });
@@ -217,58 +234,89 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
             if (person == null || person.IsDeleted == "1")
             {
-                return NotFound();
+                return NotFound(new { success = false, message = "Persona no encontrada" });
             }
 
-            // Si el usuario proporciona una nueva imagen, se actualiza, de lo contrario se conserva la actual
+            // Actualizar la foto si se proporciona una nueva
             if (updatePersonDTO.Photo != null)
             {
                 var uploadsFolder = Path.Combine(_env.ContentRootPath, "Uploads");
                 var uniqueFileName = Guid.NewGuid().ToString() + "_" + updatePersonDTO.Photo.FileName;
                 var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
-                // Asegurarse de que el directorio existe
-                Directory.CreateDirectory(uploadsFolder);
+                Directory.CreateDirectory(uploadsFolder); // Asegurar que el directorio exista
 
-                // Guardar la nueva imagen
                 using (var fileStream = new FileStream(filePath, FileMode.Create))
                 {
                     await updatePersonDTO.Photo.CopyToAsync(fileStream);
                 }
 
-                // Actualizamos la ruta de la imagen
                 person.Photo = Path.Combine("Uploads", uniqueFileName);
             }
 
-            // Actualizar los demás campos
+            // Actualizar los datos personales
             person.PhoneNumber = updatePersonDTO.PhoneNumber;
             person.CellPhoneNumber = updatePersonDTO.CellPhoneNumber;
             person.Address = updatePersonDTO.Address;
             person.Email = updatePersonDTO.Email;
             person.UpdatedAt = DateTime.UtcNow;
-            person.UpdatedBy = 1; // Ajusta esto según tu lógica de negocio
+            person.UpdatedBy = GetCurrentUserId(); // Obtener el usuario actual
 
-            _context.Entry(person).State = EntityState.Modified;
+            // Actualizar el rol
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == id && u.IsDeleted == "0");
+            if (user != null)
+            {
+                user.Role = updatePersonDTO.Role;
+                user.UpdatedAt = DateTime.UtcNow;
+                user.UpdatedBy = GetCurrentUserId();
+            }
+
+            // Actualizar el almacén
+            if (!string.IsNullOrEmpty(updatePersonDTO.WarehouseName))
+            {
+                var warehouse = await _context.Warehouses
+                    .FirstOrDefaultAsync(w => w.NameWarehouse == updatePersonDTO.WarehouseName && w.IsDeleted == "0");
+
+                if (warehouse == null)
+                {
+                    return BadRequest(new { success = false, message = "El almacén especificado no existe" });
+                }
+
+                var userWarehouse = await _context.UserWarehouses
+                    .FirstOrDefaultAsync(uw => uw.UserId == id && uw.IsDeleted == "0");
+
+                if (userWarehouse != null)
+                {
+                    userWarehouse.WarehouseId = warehouse.WarehouseId;
+                    userWarehouse.UpdatedAt = DateTime.UtcNow;
+                    userWarehouse.UpdatedBy = GetCurrentUserId();
+                }
+                else
+                {
+                    // Si no existe la relación, crear una nueva
+                    _context.UserWarehouses.Add(new UserWarehouse
+                    {
+                        UserId = id,
+                        WarehouseId = warehouse.WarehouseId,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = GetCurrentUserId(),
+                        IsDeleted = "0"
+                    });
+                }
+            }
 
             try
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Concurrency error: {ex.Message}");
-            }
-            catch (SqlTypeException ex)
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, $"SQL type error: {ex.Message}");
-            }
             catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Internal server error: {ex.Message} - {ex.InnerException?.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = "Error al actualizar la persona", details = ex.Message });
             }
 
             return NoContent();
         }
+
 
         // DELETE: api/People/5
         [HttpDelete("{id}")]

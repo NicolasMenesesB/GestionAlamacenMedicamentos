@@ -7,6 +7,7 @@
         public IFormFile? Photo { get; set; }  // Manejamos el archivo de la imagen
         public string Address { get; set; } = null!;
         public string Email { get; set; } = null!;
+        public string Role { get; set; } = null!;
         public string WarehouseName { get; set; } = null!;
     }
 

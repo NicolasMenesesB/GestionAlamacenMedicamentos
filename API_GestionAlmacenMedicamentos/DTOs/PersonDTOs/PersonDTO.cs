@@ -14,6 +14,7 @@
         public string Address { get; set; } = null!;
         public string Ci { get; set; } = null!;
         public string Email { get; set; } = null!;
+        public string Role { get; set; } 
         public string WarehouseName { get; set; } = null!;
     }
 }
