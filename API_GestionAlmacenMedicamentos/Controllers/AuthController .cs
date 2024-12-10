@@ -78,12 +78,11 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     {
                         new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
                         new Claim(ClaimTypes.Name, user.UserName),
-                        new Claim(ClaimTypes.Role, user.Role) // Asegúrate de incluir el rol
+                        new Claim(ClaimTypes.Role, user.Role) 
                     }),
-                    Expires = DateTime.UtcNow.AddDays(7),
+                    Expires = DateTime.UtcNow.AddHours(1), 
                     SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
                 };
-
 
                 // Agregar el WarehouseId al token solo si no es administrador
                 if (user.Role != "0")
