@@ -1,0 +1,1806 @@
+[
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.AlertsController",
+    "Method": "GetAlerts",
+    "RelativePath": "api/Alerts",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.Models.Alert, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.AlertsController",
+    "Method": "PostAlert",
+    "RelativePath": "api/Alerts",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "alert",
+        "Type": "API_GestionAlmacenMedicamentos.Models.Alert",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.Models.Alert",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.AlertsController",
+    "Method": "GetAlert",
+    "RelativePath": "api/Alerts/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.Models.Alert",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.AlertsController",
+    "Method": "PutAlert",
+    "RelativePath": "api/Alerts/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "alert",
+        "Type": "API_GestionAlmacenMedicamentos.Models.Alert",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.AlertsController",
+    "Method": "DeleteAlert",
+    "RelativePath": "api/Alerts/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.AuthController",
+    "Method": "Login",
+    "RelativePath": "api/Auth/login",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "login",
+        "Type": "API_GestionAlmacenMedicamentos.Models.LoginModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.AuthController",
+    "Method": "Logout",
+    "RelativePath": "api/Auth/logout",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.BatchesController",
+    "Method": "GetBatches",
+    "RelativePath": "api/Batches",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.DTOs.BatchDTOs.BatchDTO, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.BatchesController",
+    "Method": "GetBatch",
+    "RelativePath": "api/Batches/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.BatchDTOs.BatchDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.BatchesController",
+    "Method": "DeleteBatch",
+    "RelativePath": "api/Batches/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.BatchesController",
+    "Method": "CheckBatchCodeExists",
+    "RelativePath": "api/Batches/checkBatchCode/{batchCode}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "batchCode",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.BatchesController",
+    "Method": "GetCurrentWarehouse",
+    "RelativePath": "api/Batches/currentWarehouse",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.BatchesController",
+    "Method": "GetBatchesExpiringSoon",
+    "RelativePath": "api/Batches/expiringSoon",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.DTOs.BatchDTOs.BatchDTO, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.BatchesController",
+    "Method": "CreateFullBatch",
+    "RelativePath": "api/Batches/full",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "createDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.Batch.CreateFullBatchDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.DetailMedicationHandlingUnitsController",
+    "Method": "GetDetailMedicationHandlingUnits",
+    "RelativePath": "api/DetailMedicationHandlingUnits",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.DTOs.DetailMedicationHandlingUnitDTOs.DetailMedicationHandlingUnitDTO, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.DetailMedicationHandlingUnitsController",
+    "Method": "PostDetailMedicationHandlingUnit",
+    "RelativePath": "api/DetailMedicationHandlingUnits",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "createDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.DetailMedicationHandlingUnitDTOs.CreateDetailMedicationHandlingUnitDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.DetailMedicationHandlingUnitDTOs.DetailMedicationHandlingUnitDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.DetailMedicationHandlingUnitsController",
+    "Method": "PutDetailMedicationHandlingUnit",
+    "RelativePath": "api/DetailMedicationHandlingUnits/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "updateDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.DetailMedicationHandlingUnitDTOs.UpdateDetailMedicationHandlingUnitDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.DetailMedicationHandlingUnitsController",
+    "Method": "DeleteDetailMedicationHandlingUnit",
+    "RelativePath": "api/DetailMedicationHandlingUnits/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.GraficoController",
+    "Method": "GetAlmacenesMasPerdidas",
+    "RelativePath": "api/Grafico/almacenes-mas-perdidas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.GraficoController",
+    "Method": "GetAlmacenesMasVentas",
+    "RelativePath": "api/Grafico/almacenes-mas-ventas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.GraficoController",
+    "Method": "GetMedicamentosMasVendidos",
+    "RelativePath": "api/Grafico/medicamentos-mas-vendidos",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.GraficoController",
+    "Method": "GetMedicamentosPerdidosPorVencimiento",
+    "RelativePath": "api/Grafico/medicamentos-perdidos-vencimiento",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.GraficoController",
+    "Method": "GetProveedoresMasFrecuentes",
+    "RelativePath": "api/Grafico/proveedores-mas-frecuentes",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.HandlingUnitsController",
+    "Method": "GetHandlingUnits",
+    "RelativePath": "api/HandlingUnits",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.DTOs.HandlingUnitDTOs.HandlingUnitDTO, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.HandlingUnitsController",
+    "Method": "PostHandlingUnit",
+    "RelativePath": "api/HandlingUnits",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "createHandlingUnitDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.HandlingUnitDTOs.CreateHandlingUnitDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.HandlingUnitDTOs.HandlingUnitDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.HandlingUnitsController",
+    "Method": "GetHandlingUnit",
+    "RelativePath": "api/HandlingUnits/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.HandlingUnitDTOs.HandlingUnitDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.HandlingUnitsController",
+    "Method": "PutHandlingUnit",
+    "RelativePath": "api/HandlingUnits/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "updateHandlingUnitDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.HandlingUnitDTOs.UpdateHandlingUnitDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.HandlingUnitsController",
+    "Method": "DeleteHandlingUnit",
+    "RelativePath": "api/HandlingUnits/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.HandlingUnitsController",
+    "Method": "CheckHandlingUnitNameExists",
+    "RelativePath": "api/HandlingUnits/CheckNameExists/{name}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "name",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MedicationHandlingUnitController",
+    "Method": "GetMedicationHandlingUnits",
+    "RelativePath": "api/MedicationHandlingUnit",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.DTOs.MedicationHandlingUnitDTOs.MedicationHandlingUnitDTO, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MedicationHandlingUnitController",
+    "Method": "PostMedicationHandlingUnit",
+    "RelativePath": "api/MedicationHandlingUnit",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "createDTO",
+        "Type": "CreateMedicationHandlingUnitDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.MedicationHandlingUnitDTOs.MedicationHandlingUnitDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MedicationHandlingUnitController",
+    "Method": "GetMedicationHandlingUnit",
+    "RelativePath": "api/MedicationHandlingUnit/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.MedicationHandlingUnitDTOs.MedicationHandlingUnitDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MedicationHandlingUnitController",
+    "Method": "PutMedicationHandlingUnit",
+    "RelativePath": "api/MedicationHandlingUnit/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "updateDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.MedicationHandlingUnitDTOs.UpdateMedicationHandlingUnitDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MedicationHandlingUnitController",
+    "Method": "DeleteMedicationHandlingUnit",
+    "RelativePath": "api/MedicationHandlingUnit/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MedicationsController",
+    "Method": "GetMedications",
+    "RelativePath": "api/Medications",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.DTOs.MedicationDTOs.MedicationDTO, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MedicationsController",
+    "Method": "PostMedication",
+    "RelativePath": "api/Medications",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "createMedicationDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.MedicationDTOs.CreateMedicationDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.MedicationDTOs.MedicationDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MedicationsController",
+    "Method": "GetMedication",
+    "RelativePath": "api/Medications/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.MedicationDTOs.MedicationDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MedicationsController",
+    "Method": "PutMedication",
+    "RelativePath": "api/Medications/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "updateMedicationDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.MedicationDTOs.UpdateMedicationDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MedicationsController",
+    "Method": "DeleteMedication",
+    "RelativePath": "api/Medications/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MedicationsController",
+    "Method": "CheckMedicationExists",
+    "RelativePath": "api/Medications/checkMedication/{nameMedicine}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "nameMedicine",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MovementsController",
+    "Method": "GetMovements",
+    "RelativePath": "api/Movements",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.DTOs.MovementDTOs.MovementDTO, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MovementsController",
+    "Method": "PostMovement",
+    "RelativePath": "api/Movements",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "createMovementDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.MovementDTOs.CreateMovementDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.MovementDTOs.MovementDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MovementsController",
+    "Method": "GetMovement",
+    "RelativePath": "api/Movements/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.MovementDTOs.MovementDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MovementsController",
+    "Method": "PutMovement",
+    "RelativePath": "api/Movements/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "updateMovementDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.MovementDTOs.UpdateMovementDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MovementsController",
+    "Method": "DeleteMovement",
+    "RelativePath": "api/Movements/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.PeopleController",
+    "Method": "GetPeople",
+    "RelativePath": "api/People",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.DTOs.PersonDTOs.PersonDTO, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.PeopleController",
+    "Method": "PostPerson",
+    "RelativePath": "api/People",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "Names",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "LastName",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "SecondLastName",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "PhoneNumber",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "CellPhoneNumber",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Photo",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      },
+      {
+        "Name": "Gender",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Birthdate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "Address",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Ci",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Email",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Role",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "WarehouseName",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.PeopleController",
+    "Method": "GetPerson",
+    "RelativePath": "api/People/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.PeopleController",
+    "Method": "PutPerson",
+    "RelativePath": "api/People/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "PhoneNumber",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "CellPhoneNumber",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Photo",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      },
+      {
+        "Name": "Address",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Email",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Role",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "WarehouseName",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.PeopleController",
+    "Method": "DeletePerson",
+    "RelativePath": "api/People/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.PeopleController",
+    "Method": "CheckCIExists",
+    "RelativePath": "api/People/CheckCIExists/{ci}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "ci",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.PeopleController",
+    "Method": "CheckEmailExists",
+    "RelativePath": "api/People/CheckEmailExists/{email}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "email",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.ReportsController",
+    "Method": "GetReports",
+    "RelativePath": "api/Reports",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.DTOs.ReportDTOs.ReportDTO, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.ReportsController",
+    "Method": "PostReport",
+    "RelativePath": "api/Reports",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "createReportDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.ReportDTOs.CreateReportDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.ReportDTOs.ReportDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.ReportsController",
+    "Method": "GetReport",
+    "RelativePath": "api/Reports/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.ReportDTOs.ReportDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.ReportsController",
+    "Method": "PutReport",
+    "RelativePath": "api/Reports/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "updateReportDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.ReportDTOs.UpdateReportDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.ReportsController",
+    "Method": "DeleteReport",
+    "RelativePath": "api/Reports/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.ShelvesController",
+    "Method": "GetShelves",
+    "RelativePath": "api/Shelves",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.DTOs.ShelfDTOs.ShelfDTO, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.ShelvesController",
+    "Method": "PostShelf",
+    "RelativePath": "api/Shelves",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "createShelfDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.ShelfDTOs.CreateShelfDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.ShelfDTOs.ShelfDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.ShelvesController",
+    "Method": "GetShelf",
+    "RelativePath": "api/Shelves/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.ShelfDTOs.ShelfDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.ShelvesController",
+    "Method": "PutShelf",
+    "RelativePath": "api/Shelves/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "updateShelfDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.ShelfDTOs.UpdateShelfDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.ShelvesController",
+    "Method": "DeleteShelf",
+    "RelativePath": "api/Shelves/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.ShelvesController",
+    "Method": "CheckShelfExistsInWarehouse",
+    "RelativePath": "api/Shelves/CheckShelfExistsInWarehouse",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "nameShelf",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "warehouseName",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.ShelvesController",
+    "Method": "GetShelvesByWarehouse",
+    "RelativePath": "api/Shelves/Warehouse/{warehouseId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "warehouseId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.SuppliersController",
+    "Method": "GetSuppliers",
+    "RelativePath": "api/Suppliers",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.DTOs.SupplierDTOs.SupplierDTO, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.SuppliersController",
+    "Method": "PostSupplier",
+    "RelativePath": "api/Suppliers",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "createSupplierDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.SupplierDTOs.CreateSupplierDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.SupplierDTOs.SupplierDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.SuppliersController",
+    "Method": "GetSupplier",
+    "RelativePath": "api/Suppliers/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.SupplierDTOs.SupplierDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.SuppliersController",
+    "Method": "PutSupplier",
+    "RelativePath": "api/Suppliers/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "updateSupplierDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.SupplierDTOs.UpdateSupplierDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.SuppliersController",
+    "Method": "DeleteSupplier",
+    "RelativePath": "api/Suppliers/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.SuppliersController",
+    "Method": "CheckSupplierExists",
+    "RelativePath": "api/Suppliers/CheckSupplierExists",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "nameSupplier",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.TypeOfMovementsController",
+    "Method": "GetTypeOfMovements",
+    "RelativePath": "api/TypeOfMovements",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.DTOs.TypeOfMovementDTOs.TypeOfMovementDTO, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.TypeOfMovementsController",
+    "Method": "PostTypeOfMovement",
+    "RelativePath": "api/TypeOfMovements",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "createTypeOfMovementDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.TypeOfMovementDTOs.CreateTypeOfMovementDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.TypeOfMovementDTOs.TypeOfMovementDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.TypeOfMovementsController",
+    "Method": "GetTypeOfMovement",
+    "RelativePath": "api/TypeOfMovements/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.TypeOfMovementDTOs.TypeOfMovementDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.TypeOfMovementsController",
+    "Method": "PutTypeOfMovement",
+    "RelativePath": "api/TypeOfMovements/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "updateTypeOfMovementDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.TypeOfMovementDTOs.UpdateTypeOfMovementDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.TypeOfMovementsController",
+    "Method": "DeleteTypeOfMovement",
+    "RelativePath": "api/TypeOfMovements/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.UsersController",
+    "Method": "GetUsers",
+    "RelativePath": "api/Users",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.DTOs.UserDTOs.UserDTO, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.UsersController",
+    "Method": "GetUser",
+    "RelativePath": "api/Users/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.UserDTOs.UserDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.UserWarehouseController",
+    "Method": "GetUserWarehouses",
+    "RelativePath": "api/UserWarehouse",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[System.Object, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.UserWarehouseController",
+    "Method": "GetUserWarehouse",
+    "RelativePath": "api/UserWarehouse/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.UserWarehouseController",
+    "Method": "DeleteUserWarehouse",
+    "RelativePath": "api/UserWarehouse/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.UserWarehouseController",
+    "Method": "AssignUserToWarehouse",
+    "RelativePath": "api/UserWarehouse/assign",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "userId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "warehouseId",
+        "Type": "System.Int32",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.WarehousesController",
+    "Method": "GetWarehouses",
+    "RelativePath": "api/Warehouses",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.DTOs.WarehouseDTOs.WarehouseDTO, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.WarehousesController",
+    "Method": "PostWarehouse",
+    "RelativePath": "api/Warehouses",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "createWarehouseDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.WarehouseDTOs.CreateWarehouseDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.WarehouseDTOs.WarehouseDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.WarehousesController",
+    "Method": "GetWarehouse",
+    "RelativePath": "api/Warehouses/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.WarehouseDTOs.WarehouseDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.WarehousesController",
+    "Method": "PutWarehouse",
+    "RelativePath": "api/Warehouses/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "updateWarehouseDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.WarehouseDTOs.UpdateWarehouseDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.WarehousesController",
+    "Method": "DeleteWarehouse",
+    "RelativePath": "api/Warehouses/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.WarehousesController",
+    "Method": "CheckWarehouseExists",
+    "RelativePath": "api/Warehouses/CheckWarehouseExists",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "nameWarehouse",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  }
+]
