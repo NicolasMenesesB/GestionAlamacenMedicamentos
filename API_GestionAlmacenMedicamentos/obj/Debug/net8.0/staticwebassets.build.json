@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "z7jmZFKAV9fa7icGTz55BBY8fqXFKqHVTQu5ayu6ZsE=",
+  "Hash": "P6dr+nMpAfgA4lH2rRpgdHPVlNIwXNV0HDjSkxnYu+4=",
   "Source": "API_GestionAlmacenMedicamentos",
   "BasePath": "_content/API_GestionAlmacenMedicamentos",
   "Mode": "Default",
@@ -15,5 +15,6 @@
       "Pattern": "**"
     }
   ],
-  "Assets": []
+  "Assets": [],
+  "Endpoints": []
 }
