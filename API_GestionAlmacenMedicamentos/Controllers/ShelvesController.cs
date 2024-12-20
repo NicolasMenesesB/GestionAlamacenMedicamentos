@@ -259,7 +259,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
         // GET: api/Shelves/CheckShelfExistsInWarehouse
         [HttpGet("CheckShelfExistsInWarehouse")]
-        public async Task<IActionResult> CheckShelfExistsInWarehouse([FromQuery] string nameShelf, [FromQuery] string warehouseName)
+        public async Task<IActionResult> CheckShelfExistsInWarehouse([FromQuery] string nameShelf, [FromQuery] string warehouseName, [FromQuery] int? shelfId = null)
         {
             try
             {
@@ -271,11 +271,12 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     return BadRequest(new { success = false, message = "El almacén proporcionado no existe." });
                 }
 
-                // Verificar si el estante ya existe en el almacén
+                // Verificar si el estante ya existe, excluyendo el mismo shelfId
                 var shelfExists = await _context.Shelves.AnyAsync(s =>
                     s.NameShelf == nameShelf &&
                     s.WarehouseId == warehouse.WarehouseId &&
-                    s.IsDeleted == "0");
+                    s.IsDeleted == "0" &&
+                    (!shelfId.HasValue || s.ShelfId != shelfId.Value)); // Excluir el registro actual
 
                 return Ok(new { shelfExists });
             }

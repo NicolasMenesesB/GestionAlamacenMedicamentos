@@ -108,6 +108,33 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             return Ok(new { Message = "Usuario asignado al almacén exitosamente." });
         }
 
+        // GET: api/UserWarehouse/ByWarehouse/{warehouseId}
+        [HttpGet("ByWarehouse/{warehouseId}")]
+        public async Task<ActionResult<object>> GetUserWarehouseByWarehouseId(int warehouseId)
+        {
+            // Buscar si hay una asignación válida del almacén (warehouseId) al usuario
+            var userWarehouse = await _context.UserWarehouses
+                .Where(uw => uw.WarehouseId == warehouseId && uw.IsDeleted == "0")
+                .Select(uw => new
+                {
+                    uw.UserWarehouseId,
+                    uw.UserId,
+                    UserName = uw.User.UserName,
+                    WarehouseName = uw.Warehouse.NameWarehouse,
+                    uw.CreatedAt,
+                    uw.UpdatedAt
+                })
+                .FirstOrDefaultAsync();
+
+            if (userWarehouse == null)
+            {
+                return NotFound("No se encontró asignación para el almacén especificado.");
+            }
+
+            return Ok(userWarehouse);
+        }
+
+
         // DELETE: api/UserWarehouse/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUserWarehouse(int id)

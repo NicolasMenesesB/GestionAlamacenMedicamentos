@@ -1286,6 +1286,11 @@
         "Name": "warehouseName",
         "Type": "System.String",
         "IsRequired": false
+      },
+      {
+        "Name": "shelfId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []
@@ -1655,6 +1660,22 @@
         "Name": "warehouseId",
         "Type": "System.Int32",
         "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.UserWarehouseController",
+    "Method": "GetUserWarehouseByWarehouseId",
+    "RelativePath": "api/UserWarehouse/ByWarehouse/{warehouseId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "warehouseId",
+        "Type": "System.Int32",
+        "IsRequired": true
       }
     ],
     "ReturnTypes": []

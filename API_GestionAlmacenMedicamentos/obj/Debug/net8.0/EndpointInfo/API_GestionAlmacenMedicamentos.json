@@ -2067,6 +2067,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "shelfId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -2638,6 +2646,29 @@
           {
             "name": "warehouseId",
             "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/UserWarehouse/ByWarehouse/{warehouseId}": {
+      "get": {
+        "tags": [
+          "UserWarehouse"
+        ],
+        "parameters": [
+          {
+            "name": "warehouseId",
+            "in": "path",
+            "required": true,
             "schema": {
               "type": "integer",
               "format": "int32"
