@@ -345,5 +345,93 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Error al eliminar el movimiento: {ex.Message}" });
             }
         }
+
+        // RESTORE: api/Movements/restore/5
+        [HttpPost("restore/{id}")]
+        public async Task<IActionResult> RestoreMovement(int id)
+        {
+            try
+            {
+                // Buscar el movimiento eliminado junto con los datos necesarios
+                var movement = await _context.Movements
+                    .Include(m => m.Batch)
+                        .ThenInclude(b => b.MedicationHandlingUnit)
+                            .ThenInclude(mhu => mhu.Shelf)
+                    .Include(m => m.TypeOfMovement)
+                    .FirstOrDefaultAsync(m => m.MovementId == id && m.IsDeleted == "1");
+
+                if (movement == null)
+                {
+                    return NotFound(new { success = false, message = "Movimiento no encontrado o ya está activo." });
+                }
+
+                // Verificar permisos del usuario
+                if (GetCurrentUserRole() != "0" && movement.Batch.MedicationHandlingUnit.Shelf.WarehouseId != GetCurrentWarehouseId())
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Acceso denegado: no tiene permisos para este almacén." });
+                }
+
+                // Restablecer el movimiento
+                movement.IsDeleted = "0";
+                movement.UpdatedAt = DateTime.UtcNow;
+
+                // Ajustar la cantidad del lote según el tipo de movimiento
+                if (movement.TypeOfMovement.NameOfMovement.StartsWith("Salida"))
+                {
+                    movement.Batch.CurrentQuantity -= movement.Quantity;
+
+                    if (movement.Batch.CurrentQuantity < 0)
+                    {
+                        return BadRequest(new { success = false, message = "La cantidad actual del lote no puede ser negativa." });
+                    }
+                }
+                else if (movement.TypeOfMovement.NameOfMovement.StartsWith("Entrada"))
+                {
+                    movement.Batch.CurrentQuantity += movement.Quantity;
+                }
+                else
+                {
+                    return BadRequest(new { success = false, message = "El tipo de movimiento no es válido o no está definido." });
+                }
+
+                // Guardar los cambios en la base de datos
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Movimiento restaurado correctamente." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Error al restaurar el movimiento: {ex.Message}" });
+            }
+        }
+
+        // GET: api/Movements/deleted
+        [HttpGet("deleted")]
+        public async Task<ActionResult<IEnumerable<MovementDTO>>> GetDeletedMovements()
+        {
+            try
+            {
+                var deletedMovements = await _context.Movements
+                    .Include(m => m.TypeOfMovement)
+                    .Include(m => m.Batch)
+                    .Where(m => m.IsDeleted == "1")
+                    .Select(movement => new MovementDTO
+                    {
+                        MovementId = movement.MovementId,
+                        Quantity = movement.Quantity,
+                        DateOfMoviment = movement.DateOfMoviment.ToString("yyyy-MM-dd"),
+                        NameOfMovement = movement.TypeOfMovement.NameOfMovement,
+                        BatchCode = movement.Batch.BatchCode
+                    })
+                    .ToListAsync();
+
+                return Ok(deletedMovements);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Error al obtener los movimientos eliminados: {ex.Message}" });
+            }
+        }
+
     }
 }

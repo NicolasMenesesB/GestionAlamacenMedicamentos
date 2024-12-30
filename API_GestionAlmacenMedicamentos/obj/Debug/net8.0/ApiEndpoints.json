@@ -224,6 +224,26 @@
   },
   {
     "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.BatchesController",
+    "Method": "GetDeletedBatches",
+    "RelativePath": "api/Batches/deleted",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.DTOs.BatchDTOs.BatchDTO, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.BatchesController",
     "Method": "GetBatchesExpiringSoon",
     "RelativePath": "api/Batches/expiringSoon",
     "HttpMethod": "GET",
@@ -253,6 +273,38 @@
       {
         "Name": "createDTO",
         "Type": "API_GestionAlmacenMedicamentos.DTOs.Batch.CreateFullBatchDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.BatchesController",
+    "Method": "CreatePartialBatch",
+    "RelativePath": "api/Batches/partial",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "createDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.Batch.CreatePartialBatchDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.BatchesController",
+    "Method": "RestoreBatch",
+    "RelativePath": "api/Batches/restore/{id}",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
         "IsRequired": true
       }
     ],
@@ -860,6 +912,42 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MovementsController",
+    "Method": "GetDeletedMovements",
+    "RelativePath": "api/Movements/deleted",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[API_GestionAlmacenMedicamentos.DTOs.MovementDTOs.MovementDTO, API_GestionAlmacenMedicamentos, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.MovementsController",
+    "Method": "RestoreMovement",
+    "RelativePath": "api/Movements/restore/{id}",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.PeopleController",
     "Method": "GetPeople",
     "RelativePath": "api/People",
@@ -1065,6 +1153,53 @@
       {
         "Name": "email",
         "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.PeopleController",
+    "Method": "CheckWarehouseHasChief",
+    "RelativePath": "api/People/CheckWarehouseHasChief/{warehouseName}/{currentUserId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "warehouseName",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "currentUserId",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.PeopleController",
+    "Method": "GetDeletedPeople",
+    "RelativePath": "api/People/GetDeletedPeople",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.PeopleController",
+    "Method": "RestorePerson",
+    "RelativePath": "api/People/RestorePerson/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
         "IsRequired": true
       }
     ],

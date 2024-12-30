@@ -206,6 +206,20 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     return BadRequest(new { success = false, message = "El almacén especificado no existe" });
                 }
 
+                // Verificar que no exista ya un jefe de almacén
+                if (user.Role == "1")
+                {
+                    var existingManager = await _context.UserWarehouses
+                        .Include(uw => uw.User)
+                        .Where(uw => uw.WarehouseId == warehouse.WarehouseId && uw.User.Role == "1" && uw.IsDeleted == "0")
+                        .FirstOrDefaultAsync();
+
+                    if (existingManager != null)
+                    {
+                        return BadRequest(new { success = false, message = "Ya existe un jefe de almacén para este almacén." });
+                    }
+                }
+
                 var userWarehouse = new UserWarehouse
                 {
                     UserId = user.UserId,
@@ -260,12 +274,34 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             person.Address = updatePersonDTO.Address;
             person.Email = updatePersonDTO.Email;
             person.UpdatedAt = DateTime.UtcNow;
-            person.UpdatedBy = GetCurrentUserId(); // Obtener el usuario actual
+            person.UpdatedBy = GetCurrentUserId();
 
             // Actualizar el rol
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == id && u.IsDeleted == "0");
             if (user != null)
             {
+                // Verificar que no exista ya un jefe de almacén
+                if (user.Role != updatePersonDTO.Role && updatePersonDTO.Role == "1")
+                {
+                    var warehouse = await _context.UserWarehouses
+                        .Where(uw => uw.UserId == id && uw.IsDeleted == "0")
+                        .Select(uw => uw.Warehouse)
+                        .FirstOrDefaultAsync();
+
+                    if (warehouse != null)
+                    {
+                        var existingManager = await _context.UserWarehouses
+                            .Include(uw => uw.User)
+                            .Where(uw => uw.WarehouseId == warehouse.WarehouseId && uw.User.Role == "1" && uw.IsDeleted == "0")
+                            .FirstOrDefaultAsync();
+
+                        if (existingManager != null)
+                        {
+                            return BadRequest(new { success = false, message = "Ya existe un jefe de almacén para este almacén." });
+                        }
+                    }
+                }
+
                 user.Role = updatePersonDTO.Role;
                 user.UpdatedAt = DateTime.UtcNow;
                 user.UpdatedBy = GetCurrentUserId();
@@ -293,7 +329,6 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 }
                 else
                 {
-                    // Si no existe la relación, crear una nueva
                     _context.UserWarehouses.Add(new UserWarehouse
                     {
                         UserId = id,
@@ -317,6 +352,55 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             return NoContent();
         }
 
+        // GET: api/CheckWarehouseHasChief
+        [HttpGet("CheckWarehouseHasChief/{warehouseName}/{currentUserId?}")]
+        public async Task<IActionResult> CheckWarehouseHasChief(string warehouseName, int? currentUserId = null)
+        {
+            try
+            {
+                // Buscar el almacén por su nombre
+                var warehouse = await _context.Warehouses
+                    .Where(w => w.NameWarehouse == warehouseName && w.IsDeleted == "0")
+                    .FirstOrDefaultAsync();
+
+                if (warehouse == null)
+                {
+                    return NotFound(new { hasChief = false, currentChiefId = (int?)null, message = "Almacén no encontrado." });
+                }
+
+                // Verificar si ya existe un jefe asignado al almacén
+                var currentChief = await _context.Users
+                    .Join(_context.UserWarehouses, u => u.UserId, uw => uw.UserId, (u, uw) => new { u, uw })
+                    .Where(joined => joined.u.Role == "1" &&
+                                     joined.uw.WarehouseId == warehouse.WarehouseId &&
+                                     joined.u.IsDeleted == "0" &&
+                                     joined.uw.IsDeleted == "0")
+                    .Select(joined => joined.u.UserId)
+                    .FirstOrDefaultAsync();
+
+                // Si el jefe actual es el mismo que se está editando, no hay problema
+                if (currentChief != 0 && currentChief == currentUserId)
+                {
+                    return Ok(new { hasChief = false, currentChiefId = currentChief });
+                }
+
+                // Retornar el resultado con el ID del jefe actual (si existe)
+                return Ok(new
+                {
+                    hasChief = currentChief != 0, // Verificar si existe un jefe
+                    currentChiefId = currentChief != 0 ? currentChief : (int?)null // ID del jefe actual o null
+                });
+            }
+            catch (Exception ex)
+            {
+                // Manejo de errores
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    success = false,
+                    message = $"Error al verificar el almacén: {ex.Message}"
+                });
+            }
+        }
 
         // DELETE: api/People/5
         [HttpDelete("{id}")]
@@ -359,6 +443,69 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
 
             return NoContent();
+        }
+
+        [HttpGet("GetDeletedPeople")]
+        public async Task<IActionResult> GetDeletedPeople()
+        {
+            try
+            {
+                var deletedPeople = await _context.People
+                    .Where(p => p.IsDeleted == "1")
+                    .Select(p => new PersonDTO
+                    {
+                        PersonId = p.PersonId,
+                        Names = p.Names,
+                        LastName = p.LastName,
+                        SecondLastName = p.SecondLastName,
+                        PhoneNumber = p.PhoneNumber,
+                        CellPhoneNumber = p.CellPhoneNumber,
+                        Email = p.Email
+                    })
+                    .ToListAsync();
+
+                return Ok(new { success = true, data = deletedPeople });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPut("RestorePerson/{id}")]
+        public async Task<IActionResult> RestorePerson(int id)
+        {
+            try
+            {
+                var person = await _context.People.FindAsync(id);
+
+                if (person == null || person.IsDeleted == "0")
+                {
+                    return NotFound(new { success = false, message = "Persona no encontrada o ya está activa." });
+                }
+
+                // Restaurar persona
+                person.IsDeleted = "0";
+                person.UpdatedAt = DateTime.UtcNow;
+                person.UpdatedBy = GetCurrentUserId(); // ID del usuario que realiza la acción
+
+                // Restaurar usuario asociado
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == id);
+                if (user != null)
+                {
+                    user.IsDeleted = "0";
+                    user.UpdatedAt = DateTime.UtcNow;
+                    user.UpdatedBy = GetCurrentUserId();
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Persona restaurada exitosamente." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = ex.Message });
+            }
         }
 
         private string GenerateUserName(string names, string lastName, string ci)

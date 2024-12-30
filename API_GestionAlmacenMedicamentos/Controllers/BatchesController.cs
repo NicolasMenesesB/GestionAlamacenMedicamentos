@@ -57,6 +57,8 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
                 var batches = await _context.Batches
                     .Include(b => b.MedicationHandlingUnit)
+                        .ThenInclude(mhu => mhu.Medication)
+                    .Include(b => b.MedicationHandlingUnit)
                         .ThenInclude(mhu => mhu.Shelf)
                     .Include(b => b.Supplier)
                     .Where(b => b.IsDeleted == "0" &&
@@ -70,6 +72,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                         InitialQuantity = batch.InitialQuantity,
                         CurrentQuantity = batch.CurrentQuantity,
                         MinimumStock = batch.MinimumStock,
+                        MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine, // Agregar el nombre del medicamento
                         MedicationHandlingUnitName = batch.MedicationHandlingUnit.HandlingUnit.NameUnit,
                         SupplierName = batch.Supplier.NameSupplier
                     })
@@ -92,6 +95,11 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 var currentWarehouseId = GetCurrentWarehouseId();
 
                 var batchDTO = await _context.Batches
+                    .Include(b => b.MedicationHandlingUnit)
+                        .ThenInclude(mhu => mhu.Medication) // Incluir la relación con Medication
+                    .Include(b => b.MedicationHandlingUnit)
+                        .ThenInclude(mhu => mhu.Shelf) // Incluir Shelf para validación
+                    .Include(b => b.Supplier) // Incluir Supplier
                     .Where(b => b.BatchId == id && b.IsDeleted == "0" &&
                                 (b.MedicationHandlingUnit.Shelf.WarehouseId == currentWarehouseId || GetCurrentUserRole() == "0"))
                     .Select(batch => new BatchDTO
@@ -103,6 +111,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                         InitialQuantity = batch.InitialQuantity,
                         CurrentQuantity = batch.CurrentQuantity,
                         MinimumStock = batch.MinimumStock,
+                        MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine ?? "Sin Medicamento Asociado", // Agregar el medicamento
                         MedicationHandlingUnitName = batch.MedicationHandlingUnit.HandlingUnit.NameUnit ?? "N/A",
                         SupplierName = batch.Supplier.NameSupplier ?? "N/A"
                     })
@@ -178,7 +187,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                         FabricationDate = DateOnly.Parse(createDTO.FabricationDate),
                         ExpirationDate = DateOnly.Parse(createDTO.ExpirationDate),
                         InitialQuantity = createDTO.InitialQuantity,
-                        CurrentQuantity = createDTO.CurrentQuantity,
+                        CurrentQuantity = createDTO.InitialQuantity,
                         MinimumStock = createDTO.MinimumStock,
                         MedicationHandlingUnitId = medicationHandlingUnit.MedicationHandlingUnitId,
                         SupplierId = createDTO.SupplierId,
@@ -190,6 +199,29 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     _context.Batches.Add(batch);
                     await _context.SaveChangesAsync();
 
+                    // Crear el movimiento asociado al lote
+                    var typeOfMovement = await _context.TypeOfMovements
+                        .FirstOrDefaultAsync(t => t.NameOfMovement == createDTO.NameOfMovement);
+
+                    if (typeOfMovement == null)
+                    {
+                        throw new Exception($"No se encontró el tipo de movimiento: {createDTO.NameOfMovement}.");
+                    }
+
+                    var movement = new Movement
+                    {
+                        Quantity = createDTO.Quantity,
+                        DateOfMoviment = DateOnly.Parse(createDTO.DateOfMoviment),
+                        TypeOfMovementId = typeOfMovement.TypeOfMovementId,
+                        BatchId = batch.BatchId,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = GetCurrentUserId(),
+                        IsDeleted = "0"
+                    };
+
+                    _context.Movements.Add(movement);
+                    await _context.SaveChangesAsync();
+
                     await transaction.CommitAsync();
 
                     return CreatedAtAction(nameof(GetBatch), new { id = batch.BatchId }, batch);
@@ -198,6 +230,102 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 {
                     await transaction.RollbackAsync();
                     return StatusCode(StatusCodes.Status500InternalServerError, $"Error al crear el lote: {ex.Message}");
+                }
+            }
+        }
+
+        // POST: api/Batches/partial
+        [HttpPost("partial")]
+        public async Task<ActionResult> CreatePartialBatch([FromBody] CreatePartialBatchDTO createDTO)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var medication = await _context.Medications.FindAsync(createDTO.MedicationId);
+                    if (medication == null || medication.IsDeleted == "1")
+                    {
+                        return BadRequest("El medicamento proporcionado no existe.");
+                    }
+
+                    var shelf = await _context.Shelves.FindAsync(createDTO.ShelfId);
+                    if (shelf == null || shelf.IsDeleted == "1")
+                    {
+                        return BadRequest("El estante proporcionado no existe.");
+                    }
+
+                    if (GetCurrentUserRole() != "0" && shelf.WarehouseId != GetCurrentWarehouseId())
+                    {
+                        return Forbid("No tiene permisos para este almacén.");
+                    }
+
+                    var medicationHandlingUnit = new MedicationHandlingUnit
+                    {
+                        MedicationId = createDTO.MedicationId,
+                        HandlingUnitId = createDTO.HandlingUnitId,
+                        ShelfId = createDTO.ShelfId,
+                        Concentration = createDTO.Concentration,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = GetCurrentUserId(),
+                        IsDeleted = "0"
+                    };
+
+                    _context.MedicationHandlingUnits.Add(medicationHandlingUnit);
+                    await _context.SaveChangesAsync();
+
+                    var batch = new Batch
+                    {
+                        BatchCode = createDTO.BatchCode,
+                        FabricationDate = DateOnly.Parse(createDTO.FabricationDate),
+                        ExpirationDate = DateOnly.Parse(createDTO.ExpirationDate),
+                        InitialQuantity = createDTO.InitialQuantity,
+                        CurrentQuantity = createDTO.InitialQuantity,
+                        MinimumStock = createDTO.MinimumStock,
+                        MedicationHandlingUnitId = medicationHandlingUnit.MedicationHandlingUnitId,
+                        SupplierId = createDTO.SupplierId,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = GetCurrentUserId(),
+                        IsDeleted = "0"
+                    };
+
+                    _context.Batches.Add(batch);
+                    await _context.SaveChangesAsync();
+
+                    // Crear el movimiento asociado al lote
+                    var typeOfMovement = await _context.TypeOfMovements
+                        .FirstOrDefaultAsync(t => t.NameOfMovement == createDTO.NameOfMovement);
+
+                    if (typeOfMovement == null)
+                    {
+                        throw new Exception($"No se encontró el tipo de movimiento: {createDTO.NameOfMovement}.");
+                    }
+
+                    var movement = new Movement
+                    {
+                        Quantity = createDTO.Quantity,
+                        DateOfMoviment = DateOnly.Parse(createDTO.DateOfMoviment),
+                        TypeOfMovementId = typeOfMovement.TypeOfMovementId,
+                        BatchId = batch.BatchId,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = GetCurrentUserId(),
+                        IsDeleted = "0"
+                    };
+
+                    _context.Movements.Add(movement);
+                    await _context.SaveChangesAsync();
+
+                    await transaction.CommitAsync();
+                    return CreatedAtAction(nameof(GetBatch), new { id = batch.BatchId }, batch);
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    return StatusCode(StatusCodes.Status500InternalServerError, $"Error al crear el lote parcial: {ex.Message}");
                 }
             }
         }
@@ -248,6 +376,82 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Error al eliminar el lote: {ex.Message}" });
+            }
+        }
+
+        // RESTORE: api/Batches/restore/5
+        [HttpPost("restore/{id}")]
+        public async Task<IActionResult> RestoreBatch(int id)
+        {
+            try
+            {
+                // Buscar el lote eliminado junto con los movimientos asociados
+                var batch = await _context.Batches
+                    .Include(b => b.MedicationHandlingUnit) // Incluir la unidad de manejo
+                        .ThenInclude(mhu => mhu.Shelf) // Incluir el estante
+                    .FirstOrDefaultAsync(b => b.BatchId == id && b.IsDeleted == "1");
+
+                if (batch == null)
+                {
+                    return NotFound(new { success = false, message = "Lote no encontrado o ya está activo." });
+                }
+
+                // Verificar permisos del usuario
+                if (GetCurrentUserRole() != "0" && batch.MedicationHandlingUnit.Shelf.WarehouseId != GetCurrentWarehouseId())
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Acceso denegado: no tiene permisos para este almacén." });
+                }
+
+                // Restablecer el lote
+                batch.IsDeleted = "0";
+                batch.UpdatedAt = DateTime.UtcNow;
+
+                // Restablecer los movimientos asociados al lote
+                var movements = await _context.Movements
+                    .Where(m => m.BatchId == batch.BatchId && m.IsDeleted == "1")
+                    .ToListAsync();
+
+                foreach (var movement in movements)
+                {
+                    movement.IsDeleted = "0";
+                    movement.UpdatedAt = DateTime.UtcNow;
+                }
+
+                // Guardar los cambios en la base de datos
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Lote y movimientos asociados restablecidos correctamente." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Error al restablecer el lote: {ex.Message}" });
+            }
+        }
+
+        // GET: api/Batches/deleted
+        [HttpGet("deleted")]
+        public async Task<ActionResult<IEnumerable<BatchDTO>>> GetDeletedBatches()
+        {
+            try
+            {
+                var deletedBatches = await _context.Batches
+                    .Include(b => b.MedicationHandlingUnit)
+                        .ThenInclude(mhu => mhu.Medication)
+                    .Where(b => b.IsDeleted == "1")
+                    .Select(batch => new BatchDTO
+                    {
+                        BatchId = batch.BatchId,
+                        BatchCode = batch.BatchCode,
+                        ExpirationDate = batch.ExpirationDate.ToString("yyyy-MM-dd"),
+                        MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine
+                    })
+                    .ToListAsync();
+
+                return Ok(deletedBatches);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al obtener lotes eliminados: {ex.Message}");
             }
         }
 
