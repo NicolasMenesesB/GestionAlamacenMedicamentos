@@ -12,6 +12,7 @@
         public int InitialQuantity { get; set; } // Cantidad inicial del lote
         public int CurrentQuantity { get; set; } // Cantidad actual del lote
         public int MinimumStock { get; set; } // Stock mínimo requerido del lote
+        public decimal UnitPrice { get; set; }
         public int SupplierId { get; set; } // ID del proveedor
         public string StorageColdChain { get; set; } = "0"; // Indica si necesita cadena de frío (0 o 1)
         public string PhotoSensitiveStorage { get; set; } = "0"; // Indica si es fotosensible (0 o 1)

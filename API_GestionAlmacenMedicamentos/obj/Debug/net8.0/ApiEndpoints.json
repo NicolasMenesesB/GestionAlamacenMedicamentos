@@ -198,6 +198,22 @@
   },
   {
     "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.BatchesController",
+    "Method": "AddBonusEntry",
+    "RelativePath": "api/Batches/bonusEntry",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "bonusEntry",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.Batch.BonusEntryDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.BatchesController",
     "Method": "CheckBatchCodeExists",
     "RelativePath": "api/Batches/checkBatchCode/{batchCode}",
     "HttpMethod": "GET",
@@ -305,6 +321,22 @@
       {
         "Name": "id",
         "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.BatchesController",
+    "Method": "GetBatchByCode",
+    "RelativePath": "api/Batches/searchByBatchCode/{batchCode}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "batchCode",
+        "Type": "System.String",
         "IsRequired": true
       }
     ],

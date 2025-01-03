@@ -19,6 +19,10 @@ public partial class Batch
 
     public int MinimumStock { get; set; }
 
+    public decimal unitPrice { get; set; }
+
+    public decimal? UnitPriceBonus { get; set; }
+
     public int MedicationHandlingUnitId { get; set; }
 
     public int SupplierId { get; set; }

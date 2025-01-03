@@ -527,6 +527,59 @@
         }
       }
     },
+    "/api/Batches/searchByBatchCode/{batchCode}": {
+      "get": {
+        "tags": [
+          "Batches"
+        ],
+        "parameters": [
+          {
+            "name": "batchCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Batches/bonusEntry": {
+      "post": {
+        "tags": [
+          "Batches"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BonusEntryDTO"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BonusEntryDTO"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/BonusEntryDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
     "/api/DetailMedicationHandlingUnits": {
       "get": {
         "tags": [
@@ -3168,6 +3221,15 @@
             "type": "integer",
             "format": "int32"
           },
+          "unitPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "unitPriceBonus": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
           "medicationHandlingUnitId": {
             "type": "integer",
             "format": "int32"
@@ -3238,6 +3300,14 @@
             "type": "integer",
             "format": "int32"
           },
+          "unitPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalPrice": {
+            "type": "number",
+            "format": "double"
+          },
           "medicationName": {
             "type": "string",
             "nullable": true
@@ -3257,6 +3327,29 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "BonusEntryDTO": {
+        "type": "object",
+        "properties": {
+          "batchCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "bonusQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unitPriceBonus": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "nameOfMovement": {
+            "type": "string",
             "nullable": true
           }
         },
@@ -3330,6 +3423,10 @@
           "minimumStock": {
             "type": "integer",
             "format": "int32"
+          },
+          "unitPrice": {
+            "type": "number",
+            "format": "double"
           },
           "supplierId": {
             "type": "integer",
@@ -3492,6 +3589,10 @@
           "minimumStock": {
             "type": "integer",
             "format": "int32"
+          },
+          "unitPrice": {
+            "type": "number",
+            "format": "double"
           },
           "supplierId": {
             "type": "integer",

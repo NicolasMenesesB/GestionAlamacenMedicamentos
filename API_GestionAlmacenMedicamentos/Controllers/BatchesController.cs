@@ -72,7 +72,9 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                         InitialQuantity = batch.InitialQuantity,
                         CurrentQuantity = batch.CurrentQuantity,
                         MinimumStock = batch.MinimumStock,
-                        MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine, // Agregar el nombre del medicamento
+                        unitPrice = batch.unitPrice, // Precio unitario
+                        TotalPrice = batch.InitialQuantity * batch.unitPrice, // Precio total calculado
+                        MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine,
                         MedicationHandlingUnitName = batch.MedicationHandlingUnit.HandlingUnit.NameUnit,
                         SupplierName = batch.Supplier.NameSupplier
                     })
@@ -189,6 +191,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                         InitialQuantity = createDTO.InitialQuantity,
                         CurrentQuantity = createDTO.InitialQuantity,
                         MinimumStock = createDTO.MinimumStock,
+                        unitPrice = createDTO.UnitPrice,
                         MedicationHandlingUnitId = medicationHandlingUnit.MedicationHandlingUnitId,
                         SupplierId = createDTO.SupplierId,
                         CreatedAt = DateTime.UtcNow,
@@ -286,6 +289,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                         InitialQuantity = createDTO.InitialQuantity,
                         CurrentQuantity = createDTO.InitialQuantity,
                         MinimumStock = createDTO.MinimumStock,
+                        unitPrice = createDTO.UnitPrice,
                         MedicationHandlingUnitId = medicationHandlingUnit.MedicationHandlingUnitId,
                         SupplierId = createDTO.SupplierId,
                         CreatedAt = DateTime.UtcNow,
@@ -523,5 +527,111 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             return Ok(new { exists });
         }
 
+        //GET /api/Batches/searchByBatchCode/{batchCode}
+        [HttpGet("searchByBatchCode/{batchCode}")]
+        public async Task<IActionResult> GetBatchByCode(string batchCode)
+        {
+            var batch = await _context.Batches
+                .Include(b => b.MedicationHandlingUnit)
+                    .ThenInclude(mhu => mhu.Medication)
+                .Include(b => b.MedicationHandlingUnit)
+                    .ThenInclude(mhu => mhu.HandlingUnit)
+                .Include(b => b.MedicationHandlingUnit)
+                    .ThenInclude(mhu => mhu.Shelf)
+                .Include(b => b.Supplier)
+                .FirstOrDefaultAsync(b => b.BatchCode == batchCode && b.IsDeleted == "0");
+
+            if (batch == null)
+            {
+                return NotFound(new { success = false, message = "Lote no encontrado." });
+            }
+
+            var shelf = batch.MedicationHandlingUnit.Shelf;
+            var warehouse = await _context.Warehouses
+                .FirstOrDefaultAsync(w => w.WarehouseId == shelf.WarehouseId);
+
+            return Ok(new
+            {
+                batch.BatchId,
+                batch.BatchCode,
+                batch.InitialQuantity,
+                batch.CurrentQuantity,
+                batch.MinimumStock,
+                batch.unitPrice,
+                batch.UnitPriceBonus,
+                MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine,
+                Concentration = batch.MedicationHandlingUnit.Concentration,
+                UnitMeasure = batch.MedicationHandlingUnit.HandlingUnit.NameUnit,
+                WarehouseName = warehouse?.NameWarehouse ?? "N/A",
+                ShelfName = shelf?.NameShelf ?? "N/A",
+                SupplierName = batch.Supplier?.NameSupplier ?? "N/A"
+            });
+        }
+
+        //POST /api/Batches/bonusEntry
+        [HttpPost("bonusEntry")]
+        public async Task<IActionResult> AddBonusEntry([FromBody] BonusEntryDTO bonusEntry)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Buscar el lote por código ----- Entrada por bonificacion
+                var batch = await _context.Batches.FirstOrDefaultAsync(b => b.BatchCode == bonusEntry.BatchCode && b.IsDeleted == "0");
+
+                if (batch == null)
+                {
+                    return NotFound("Lote no encontrado.");
+                }
+
+                // Buscar el tipo de movimiento por su nombre
+                var typeOfMovement = await _context.TypeOfMovements
+                    .FirstOrDefaultAsync(t => t.NameOfMovement == bonusEntry.NameOfMovement);
+
+                if (typeOfMovement == null)
+                {
+                    return BadRequest("El tipo de movimiento proporcionado no existe.");
+                }
+
+                // Actualizar las cantidades del lote
+                batch.CurrentQuantity += bonusEntry.BonusQuantity;
+                batch.InitialQuantity += bonusEntry.BonusQuantity;
+
+                // Si tiene precio unitario de bonificación, actualizarlo
+                if (bonusEntry.UnitPriceBonus.HasValue)
+                {
+                    batch.UnitPriceBonus = bonusEntry.UnitPriceBonus;
+                }
+
+                _context.Batches.Update(batch);
+
+                // Crear un registro en la tabla de movimientos
+                var movement = new Movement
+                {
+                    BatchId = batch.BatchId,
+                    TypeOfMovementId = typeOfMovement.TypeOfMovementId,
+                    Quantity = bonusEntry.BonusQuantity,
+                    DateOfMoviment = DateOnly.FromDateTime(DateTime.UtcNow),
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = GetCurrentUserId(),
+                    IsDeleted = "0"
+                };
+
+                _context.Movements.Add(movement);
+
+                // Guardar cambios
+                await _context.SaveChangesAsync();
+
+                // Confirmar la transacción
+                await transaction.CommitAsync();
+
+                return Ok(new { success = true, message = "Bonificación registrada exitosamente." });
+            }
+            catch (Exception ex)
+            {
+                // Revertir la transacción si hay errores
+                await transaction.RollbackAsync();
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
     }
 }
