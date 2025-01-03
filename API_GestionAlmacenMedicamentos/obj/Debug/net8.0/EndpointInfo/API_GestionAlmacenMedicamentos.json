@@ -1391,6 +1391,15 @@
         "tags": [
           "Movements"
         ],
+        "parameters": [
+          {
+            "name": "nameOfMovement",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Success",
@@ -3304,15 +3313,33 @@
             "type": "number",
             "format": "double"
           },
+          "unitPriceBonus": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
           "totalPrice": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "readOnly": true
           },
           "medicationName": {
             "type": "string",
             "nullable": true
           },
-          "medicationHandlingUnitName": {
+          "concentration": {
+            "type": "string",
+            "nullable": true
+          },
+          "unitMeasure": {
+            "type": "string",
+            "nullable": true
+          },
+          "shelfName": {
+            "type": "string",
+            "nullable": true
+          },
+          "warehouseName": {
             "type": "string",
             "nullable": true
           },

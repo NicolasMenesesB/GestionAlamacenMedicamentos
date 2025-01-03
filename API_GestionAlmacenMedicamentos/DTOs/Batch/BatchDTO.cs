@@ -9,11 +9,15 @@
         public int InitialQuantity { get; set; }
         public int CurrentQuantity { get; set; }
         public int MinimumStock { get; set; }
-        public decimal unitPrice { get; set; } // Campo que sí está en la base de datos
-        public decimal TotalPrice { get; set; } // Campo calculado, no almacenado en la base de datos
+        public decimal unitPrice { get; set; } // Precio unitario
+        public decimal? UnitPriceBonus { get; set; } // Precio de bonificación
+        public decimal TotalPrice => InitialQuantity * unitPrice; // Calculado
         public string MedicationName { get; set; } = null!;
-        public string MedicationHandlingUnitName { get; set; }
-        public string SupplierName { get; set; }
+        public string Concentration { get; set; } = null!; // Nueva propiedad
+        public string UnitMeasure { get; set; } = null!; // Nueva propiedad
+        public string ShelfName { get; set; } = null!; // Nueva propiedad
+        public string WarehouseName { get; set; } = null!; // Nueva propiedad
+        public string SupplierName { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }

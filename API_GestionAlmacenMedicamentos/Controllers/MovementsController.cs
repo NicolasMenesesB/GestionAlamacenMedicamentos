@@ -43,40 +43,32 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
         // GET: api/Movements
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MovementDTO>>> GetMovements()
+        public async Task<ActionResult<IEnumerable<MovementDTO>>> GetMovements([FromQuery] string? nameOfMovement = null)
         {
-            try
-            {
-                var currentWarehouseId = GetCurrentWarehouseId();
+            var query = _context.Movements
+                .Include(m => m.TypeOfMovement)
+                .Include(m => m.Batch)
+                    .ThenInclude(b => b.MedicationHandlingUnit)
+                        .ThenInclude(mhu => mhu.Shelf)
+                .Where(m => m.IsDeleted == "0");
 
-                if (currentWarehouseId == null && GetCurrentUserRole() != "0")
+            if (!string.IsNullOrEmpty(nameOfMovement))
+            {
+                query = query.Where(m => m.TypeOfMovement.NameOfMovement == nameOfMovement);
+            }
+
+            var movements = await query
+                .Select(m => new MovementDTO
                 {
-                    return Forbid("Acceso denegado: no se puede determinar el almacén del usuario.");
-                }
+                    MovementId = m.MovementId,
+                    Quantity = m.Quantity,
+                    DateOfMoviment = m.DateOfMoviment.ToString("yyyy-MM-dd"),
+                    NameOfMovement = m.TypeOfMovement.NameOfMovement,
+                    BatchCode = m.Batch.BatchCode
+                })
+                .ToListAsync();
 
-                var movements = await _context.Movements
-                    .Include(m => m.TypeOfMovement)
-                    .Include(m => m.Batch)
-                        .ThenInclude(b => b.MedicationHandlingUnit)
-                            .ThenInclude(mhu => mhu.Shelf)
-                    .Where(m => m.IsDeleted == "0" &&
-                                (m.Batch.MedicationHandlingUnit.Shelf.WarehouseId == currentWarehouseId || GetCurrentUserRole() == "0"))
-                    .Select(m => new MovementDTO
-                    {
-                        MovementId = m.MovementId,
-                        Quantity = m.Quantity,
-                        DateOfMoviment = m.DateOfMoviment.ToString("yyyy-MM-dd"),
-                        NameOfMovement = m.TypeOfMovement.NameOfMovement,
-                        BatchCode = m.Batch.BatchCode
-                    })
-                    .ToListAsync();
-
-                return Ok(movements);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al obtener los movimientos: {ex.Message}");
-            }
+            return Ok(movements);
         }
 
         // GET: api/Movements/5

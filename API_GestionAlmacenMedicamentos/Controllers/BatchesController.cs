@@ -59,34 +59,45 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     .Include(b => b.MedicationHandlingUnit)
                         .ThenInclude(mhu => mhu.Medication)
                     .Include(b => b.MedicationHandlingUnit)
+                        .ThenInclude(mhu => mhu.HandlingUnit)
+                    .Include(b => b.MedicationHandlingUnit)
                         .ThenInclude(mhu => mhu.Shelf)
                     .Include(b => b.Supplier)
                     .Where(b => b.IsDeleted == "0" &&
                                 (b.MedicationHandlingUnit.Shelf.WarehouseId == currentWarehouseId || GetCurrentUserRole() == "0"))
-                    .Select(batch => new BatchDTO
-                    {
-                        BatchId = batch.BatchId,
-                        BatchCode = batch.BatchCode,
-                        FabricationDate = batch.FabricationDate.ToString("yyyy-MM-dd"),
-                        ExpirationDate = batch.ExpirationDate.ToString("yyyy-MM-dd"),
-                        InitialQuantity = batch.InitialQuantity,
-                        CurrentQuantity = batch.CurrentQuantity,
-                        MinimumStock = batch.MinimumStock,
-                        unitPrice = batch.unitPrice, // Precio unitario
-                        TotalPrice = batch.InitialQuantity * batch.unitPrice, // Precio total calculado
-                        MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine,
-                        MedicationHandlingUnitName = batch.MedicationHandlingUnit.HandlingUnit.NameUnit,
-                        SupplierName = batch.Supplier.NameSupplier
-                    })
                     .ToListAsync();
 
-                return Ok(batches);
+                // Realiza la lógica adicional en memoria
+                var result = batches.Select(batch => new BatchDTO
+                {
+                    BatchId = batch.BatchId,
+                    BatchCode = batch.BatchCode,
+                    FabricationDate = batch.FabricationDate.ToString("yyyy-MM-dd"),
+                    ExpirationDate = batch.ExpirationDate.ToString("yyyy-MM-dd"),
+                    InitialQuantity = batch.InitialQuantity,
+                    CurrentQuantity = batch.CurrentQuantity,
+                    MinimumStock = batch.MinimumStock,
+                    unitPrice = batch.unitPrice,
+                    UnitPriceBonus = batch.UnitPriceBonus,
+                    MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine,
+                    Concentration = batch.MedicationHandlingUnit.Concentration,
+                    UnitMeasure = batch.MedicationHandlingUnit.HandlingUnit.NameUnit,
+                    ShelfName = batch.MedicationHandlingUnit.Shelf?.NameShelf ?? "N/A",
+                    WarehouseName = _context.Warehouses
+                        .FirstOrDefault(w => w.WarehouseId == batch.MedicationHandlingUnit.Shelf.WarehouseId)?.NameWarehouse ?? "N/A",
+                    SupplierName = batch.Supplier?.NameSupplier ?? "N/A",
+                    CreatedAt = batch.CreatedAt,
+                    UpdatedAt = batch.UpdatedAt
+                }).ToList();
+
+                return Ok(result);
             }
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, $"Error al obtener los lotes: {ex.Message}");
             }
         }
+
 
         // GET: api/Batches/5
         [HttpGet("{id}")]
@@ -96,33 +107,54 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             {
                 var currentWarehouseId = GetCurrentWarehouseId();
 
-                var batchDTO = await _context.Batches
+                var batch = await _context.Batches
                     .Include(b => b.MedicationHandlingUnit)
-                        .ThenInclude(mhu => mhu.Medication) // Incluir la relación con Medication
+                        .ThenInclude(mhu => mhu.Medication)
                     .Include(b => b.MedicationHandlingUnit)
-                        .ThenInclude(mhu => mhu.Shelf) // Incluir Shelf para validación
-                    .Include(b => b.Supplier) // Incluir Supplier
+                        .ThenInclude(mhu => mhu.HandlingUnit)
+                    .Include(b => b.MedicationHandlingUnit)
+                        .ThenInclude(mhu => mhu.Shelf)
+                    .Include(b => b.Supplier)
                     .Where(b => b.BatchId == id && b.IsDeleted == "0" &&
                                 (b.MedicationHandlingUnit.Shelf.WarehouseId == currentWarehouseId || GetCurrentUserRole() == "0"))
-                    .Select(batch => new BatchDTO
-                    {
-                        BatchId = batch.BatchId,
-                        BatchCode = batch.BatchCode,
-                        FabricationDate = batch.FabricationDate.ToString("yyyy-MM-dd"),
-                        ExpirationDate = batch.ExpirationDate.ToString("yyyy-MM-dd"),
-                        InitialQuantity = batch.InitialQuantity,
-                        CurrentQuantity = batch.CurrentQuantity,
-                        MinimumStock = batch.MinimumStock,
-                        MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine ?? "Sin Medicamento Asociado", // Agregar el medicamento
-                        MedicationHandlingUnitName = batch.MedicationHandlingUnit.HandlingUnit.NameUnit ?? "N/A",
-                        SupplierName = batch.Supplier.NameSupplier ?? "N/A"
-                    })
                     .FirstOrDefaultAsync();
 
-                if (batchDTO == null)
+                if (batch == null)
                 {
                     return NotFound();
                 }
+
+                // Obtener el nombre del almacén de forma separada
+                string warehouseName = "N/A";
+                if (batch.MedicationHandlingUnit.Shelf?.WarehouseId != null)
+                {
+                    var warehouse = await _context.Warehouses
+                        .FirstOrDefaultAsync(w => w.WarehouseId == batch.MedicationHandlingUnit.Shelf.WarehouseId);
+
+                    warehouseName = warehouse?.NameWarehouse ?? "N/A";
+                }
+
+                // Mapear el lote a DTO
+                var batchDTO = new BatchDTO
+                {
+                    BatchId = batch.BatchId,
+                    BatchCode = batch.BatchCode,
+                    FabricationDate = batch.FabricationDate.ToString("yyyy-MM-dd"),
+                    ExpirationDate = batch.ExpirationDate.ToString("yyyy-MM-dd"),
+                    InitialQuantity = batch.InitialQuantity,
+                    CurrentQuantity = batch.CurrentQuantity,
+                    MinimumStock = batch.MinimumStock,
+                    unitPrice = batch.unitPrice,
+                    UnitPriceBonus = batch.UnitPriceBonus,
+                    MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine ?? "Sin Medicamento Asociado",
+                    Concentration = batch.MedicationHandlingUnit.Concentration ?? "N/A",
+                    UnitMeasure = batch.MedicationHandlingUnit.HandlingUnit?.NameUnit ?? "N/A",
+                    ShelfName = batch.MedicationHandlingUnit.Shelf?.NameShelf ?? "N/A",
+                    WarehouseName = warehouseName,
+                    SupplierName = batch.Supplier?.NameSupplier ?? "N/A",
+                    CreatedAt = batch.CreatedAt,
+                    UpdatedAt = batch.UpdatedAt
+                };
 
                 return Ok(batchDTO);
             }
