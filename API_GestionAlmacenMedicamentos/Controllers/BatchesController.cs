@@ -26,23 +26,34 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             _context = context;
         }
 
+        #region Métodos Auxiliares
+
+        // Obtiene el ID del usuario actual a partir de los claims.
         private int GetCurrentUserId()
         {
             return int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? "0");
         }
 
+        // Obtiene el rol del usuario actual a partir de los claims.
         private string GetCurrentUserRole()
         {
             return User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value ?? string.Empty;
         }
 
+        // Obtiene el ID del almacén asociado al usuario actual a partir de los claims.
         private int? GetCurrentWarehouseId()
         {
             var warehouseId = User.Claims.FirstOrDefault(c => c.Type == "WarehouseId")?.Value;
             return string.IsNullOrEmpty(warehouseId) ? null : int.Parse(warehouseId);
         }
 
+        #endregion
+
+
+        #region Métodos GET
+
         // GET: api/Batches
+        // Obtiene una lista de lotes activos con información detallada.
         [HttpGet]
         public async Task<ActionResult<IEnumerable<BatchDTO>>> GetBatches()
         {
@@ -67,7 +78,6 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                                 (b.MedicationHandlingUnit.Shelf.WarehouseId == currentWarehouseId || GetCurrentUserRole() == "0"))
                     .ToListAsync();
 
-                // Realiza la lógica adicional en memoria
                 var result = batches.Select(batch => new BatchDTO
                 {
                     BatchId = batch.BatchId,
@@ -98,8 +108,8 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
-
         // GET: api/Batches/5
+        // Obtiene los detalles de un lote específico basado en su ID.
         [HttpGet("{id}")]
         public async Task<ActionResult<BatchDTO>> GetBatch(int id)
         {
@@ -124,17 +134,14 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     return NotFound();
                 }
 
-                // Obtener el nombre del almacén de forma separada
                 string warehouseName = "N/A";
                 if (batch.MedicationHandlingUnit.Shelf?.WarehouseId != null)
                 {
                     var warehouse = await _context.Warehouses
                         .FirstOrDefaultAsync(w => w.WarehouseId == batch.MedicationHandlingUnit.Shelf.WarehouseId);
-
                     warehouseName = warehouse?.NameWarehouse ?? "N/A";
                 }
 
-                // Mapear el lote a DTO
                 var batchDTO = new BatchDTO
                 {
                     BatchId = batch.BatchId,
@@ -164,7 +171,155 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
+        // GET: api/Batches/deleted
+        // Obtiene una lista de lotes que han sido eliminados.
+        [HttpGet("deleted")]
+        public async Task<ActionResult<IEnumerable<BatchDTO>>> GetDeletedBatches()
+        {
+            try
+            {
+                var deletedBatches = await _context.Batches
+                    .Include(b => b.MedicationHandlingUnit)
+                        .ThenInclude(mhu => mhu.Medication)
+                    .Where(b => b.IsDeleted == "1")
+                    .Select(batch => new BatchDTO
+                    {
+                        BatchId = batch.BatchId,
+                        BatchCode = batch.BatchCode,
+                        ExpirationDate = batch.ExpirationDate.ToString("yyyy-MM-dd"),
+                        MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine
+                    })
+                    .ToListAsync();
+
+                return Ok(deletedBatches);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al obtener lotes eliminados: {ex.Message}");
+            }
+        }
+
+        // GET: api/Batches/expiringSoon
+        // Obtiene una lista de lotes que están próximos a expirar.
+        [HttpGet("expiringSoon")]
+        public async Task<ActionResult<IEnumerable<BatchDTO>>> GetBatchesExpiringSoon()
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var nextMonth = today.AddMonths(1);
+
+            var expiringSoonBatches = await _context.Batches
+                .Include(b => b.MedicationHandlingUnit)
+                    .ThenInclude(mhu => mhu.Shelf)
+                .Where(b => b.IsDeleted == "0" &&
+                            b.ExpirationDate <= nextMonth &&
+                            b.ExpirationDate > today &&
+                            (b.MedicationHandlingUnit.Shelf.WarehouseId == GetCurrentWarehouseId() || GetCurrentUserRole() == "0"))
+                .Select(batch => new BatchDTO
+                {
+                    BatchId = batch.BatchId,
+                    BatchCode = batch.BatchCode,
+                    ExpirationDate = batch.ExpirationDate.ToString("yyyy-MM-dd")
+                })
+                .ToListAsync();
+
+            return Ok(expiringSoonBatches);
+        }
+
+        // GET: api/Batches/searchByBatchCode/{batchCode}
+        // Busca un lote basado en su código de lote.
+        [HttpGet("searchByBatchCode/{batchCode}")]
+        public async Task<IActionResult> GetBatchByCode(string batchCode)
+        {
+            var batch = await _context.Batches
+                .Include(b => b.MedicationHandlingUnit)
+                    .ThenInclude(mhu => mhu.Medication)
+                .Include(b => b.MedicationHandlingUnit)
+                    .ThenInclude(mhu => mhu.HandlingUnit)
+                .Include(b => b.MedicationHandlingUnit)
+                    .ThenInclude(mhu => mhu.Shelf)
+                .Include(b => b.Supplier)
+                .FirstOrDefaultAsync(b => b.BatchCode == batchCode && b.IsDeleted == "0");
+
+            if (batch == null)
+            {
+                return NotFound(new { success = false, message = "Lote no encontrado." });
+            }
+
+            var shelf = batch.MedicationHandlingUnit.Shelf;
+            var warehouse = await _context.Warehouses
+                .FirstOrDefaultAsync(w => w.WarehouseId == shelf.WarehouseId);
+
+            return Ok(new
+            {
+                batch.BatchId,
+                batch.BatchCode,
+                batch.InitialQuantity,
+                batch.CurrentQuantity,
+                batch.MinimumStock,
+                batch.unitPrice,
+                batch.UnitPriceBonus,
+                MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine,
+                Concentration = batch.MedicationHandlingUnit.Concentration,
+                UnitMeasure = batch.MedicationHandlingUnit.HandlingUnit.NameUnit,
+                WarehouseName = warehouse?.NameWarehouse ?? "N/A",
+                ShelfName = shelf?.NameShelf ?? "N/A",
+                SupplierName = batch.Supplier?.NameSupplier ?? "N/A"
+            });
+        }
+
+        // GET: api/Warehouses/current
+        // Obtiene información del almacén asociado al usuario actual. 
+        [HttpGet("currentWarehouse")]
+        public async Task<ActionResult> GetCurrentWarehouse()
+        {
+            var currentUserRole = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+            if (currentUserRole != "0") // Si no es administrador
+            {
+                var currentWarehouseId = User.Claims.FirstOrDefault(c => c.Type == "WarehouseId")?.Value;
+                if (string.IsNullOrEmpty(currentWarehouseId))
+                {
+                    return NotFound("No se encontró el almacén para este usuario.");
+                }
+
+                var warehouse = await _context.Warehouses
+                    .Where(w => w.WarehouseId == int.Parse(currentWarehouseId) && w.IsDeleted == "0")
+                    .Select(w => new { w.WarehouseId, w.NameWarehouse })
+                    .FirstOrDefaultAsync();
+
+                if (warehouse == null)
+                {
+                    return NotFound("El almacén no existe o está eliminado.");
+                }
+
+                return Ok(warehouse);
+            }
+
+            // Si es administrador, retorna todos los almacenes
+            var warehouses = await _context.Warehouses
+                .Where(w => w.IsDeleted == "0")
+                .Select(w => new { w.WarehouseId, w.NameWarehouse })
+                .ToListAsync();
+
+            return Ok(warehouses);
+        }
+
+
+        // GET: api/Batches/checkBatchCode/{batchCode}
+        // Verifica si un código de lote ya existe.
+        [HttpGet("checkBatchCode/{batchCode}")]
+        public async Task<IActionResult> CheckBatchCodeExists(string batchCode)
+        {
+            var exists = await _context.Batches.AnyAsync(b => b.BatchCode == batchCode && b.IsDeleted == "0");
+            return Ok(new { exists });
+        }
+
+        #endregion
+
+
+        #region Métodos POST
+
         // POST: api/Batches/full
+        // Crea un nuevo lote completo con todos los datos requeridos, incluyendo el medicamento, la unidad de manejo, y el movimiento asociado.
         [HttpPost("full")]
         public async Task<ActionResult> CreateFullBatch([FromBody] CreateFullBatchDTO createDTO)
         {
@@ -234,7 +389,6 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     _context.Batches.Add(batch);
                     await _context.SaveChangesAsync();
 
-                    // Crear el movimiento asociado al lote
                     var typeOfMovement = await _context.TypeOfMovements
                         .FirstOrDefaultAsync(t => t.NameOfMovement == createDTO.NameOfMovement);
 
@@ -270,6 +424,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
         }
 
         // POST: api/Batches/partial
+        // Crea un lote parcial con datos específicos, incluyendo la unidad de manejo y el movimiento asociado.
         [HttpPost("partial")]
         public async Task<ActionResult> CreatePartialBatch([FromBody] CreatePartialBatchDTO createDTO)
         {
@@ -332,7 +487,6 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     _context.Batches.Add(batch);
                     await _context.SaveChangesAsync();
 
-                    // Crear el movimiento asociado al lote
                     var typeOfMovement = await _context.TypeOfMovements
                         .FirstOrDefaultAsync(t => t.NameOfMovement == createDTO.NameOfMovement);
 
@@ -366,248 +520,14 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
-        // DELETE: api/Batches/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteBatch(int id)
-        {
-            try
-            {
-                // Buscar el lote junto con su unidad de manejo y estante relacionado
-                var batch = await _context.Batches
-                    .Include(b => b.MedicationHandlingUnit) // Incluir la unidad de manejo
-                        .ThenInclude(mhu => mhu.Shelf) // Incluir el estante
-                    .FirstOrDefaultAsync(b => b.BatchId == id && b.IsDeleted == "0");
-
-                if (batch == null)
-                {
-                    return NotFound(new { success = false, message = "Lote no encontrado." });
-                }
-
-                // Verificar permisos del usuario
-                if (GetCurrentUserRole() != "0" && batch.MedicationHandlingUnit.Shelf.WarehouseId != GetCurrentWarehouseId())
-                {
-                    return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Acceso denegado: no tiene permisos para este almacén." });
-                }
-
-                // Eliminar lógicamente todos los movimientos asociados al lote
-                var movements = await _context.Movements
-                    .Where(m => m.BatchId == batch.BatchId && m.IsDeleted == "0")
-                    .ToListAsync();
-
-                foreach (var movement in movements)
-                {
-                    movement.IsDeleted = "1";
-                    movement.UpdatedAt = DateTime.UtcNow;
-                }
-
-                // Marcar el lote como eliminado lógicamente
-                batch.IsDeleted = "1";
-                batch.UpdatedAt = DateTime.UtcNow;
-
-                // Guardar los cambios en la base de datos
-                await _context.SaveChangesAsync();
-
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Error al eliminar el lote: {ex.Message}" });
-            }
-        }
-
-        // RESTORE: api/Batches/restore/5
-        [HttpPost("restore/{id}")]
-        public async Task<IActionResult> RestoreBatch(int id)
-        {
-            try
-            {
-                // Buscar el lote eliminado junto con los movimientos asociados
-                var batch = await _context.Batches
-                    .Include(b => b.MedicationHandlingUnit) // Incluir la unidad de manejo
-                        .ThenInclude(mhu => mhu.Shelf) // Incluir el estante
-                    .FirstOrDefaultAsync(b => b.BatchId == id && b.IsDeleted == "1");
-
-                if (batch == null)
-                {
-                    return NotFound(new { success = false, message = "Lote no encontrado o ya está activo." });
-                }
-
-                // Verificar permisos del usuario
-                if (GetCurrentUserRole() != "0" && batch.MedicationHandlingUnit.Shelf.WarehouseId != GetCurrentWarehouseId())
-                {
-                    return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Acceso denegado: no tiene permisos para este almacén." });
-                }
-
-                // Restablecer el lote
-                batch.IsDeleted = "0";
-                batch.UpdatedAt = DateTime.UtcNow;
-
-                // Restablecer los movimientos asociados al lote
-                var movements = await _context.Movements
-                    .Where(m => m.BatchId == batch.BatchId && m.IsDeleted == "1")
-                    .ToListAsync();
-
-                foreach (var movement in movements)
-                {
-                    movement.IsDeleted = "0";
-                    movement.UpdatedAt = DateTime.UtcNow;
-                }
-
-                // Guardar los cambios en la base de datos
-                await _context.SaveChangesAsync();
-
-                return Ok(new { success = true, message = "Lote y movimientos asociados restablecidos correctamente." });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Error al restablecer el lote: {ex.Message}" });
-            }
-        }
-
-        // GET: api/Batches/deleted
-        [HttpGet("deleted")]
-        public async Task<ActionResult<IEnumerable<BatchDTO>>> GetDeletedBatches()
-        {
-            try
-            {
-                var deletedBatches = await _context.Batches
-                    .Include(b => b.MedicationHandlingUnit)
-                        .ThenInclude(mhu => mhu.Medication)
-                    .Where(b => b.IsDeleted == "1")
-                    .Select(batch => new BatchDTO
-                    {
-                        BatchId = batch.BatchId,
-                        BatchCode = batch.BatchCode,
-                        ExpirationDate = batch.ExpirationDate.ToString("yyyy-MM-dd"),
-                        MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine
-                    })
-                    .ToListAsync();
-
-                return Ok(deletedBatches);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al obtener lotes eliminados: {ex.Message}");
-            }
-        }
-
-        // GET: api/Batches/expiringSoon
-        [HttpGet("expiringSoon")]
-        public async Task<ActionResult<IEnumerable<BatchDTO>>> GetBatchesExpiringSoon()
-        {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
-            var nextMonth = today.AddMonths(1);
-
-            var expiringSoonBatches = await _context.Batches
-                .Include(b => b.MedicationHandlingUnit)
-                    .ThenInclude(mhu => mhu.Shelf)
-                .Where(b => b.IsDeleted == "0" &&
-                            b.ExpirationDate <= nextMonth &&
-                            b.ExpirationDate > today &&
-                            (b.MedicationHandlingUnit.Shelf.WarehouseId == GetCurrentWarehouseId() || GetCurrentUserRole() == "0"))
-                .Select(batch => new BatchDTO
-                {
-                    BatchId = batch.BatchId,
-                    BatchCode = batch.BatchCode,
-                    ExpirationDate = batch.ExpirationDate.ToString("yyyy-MM-dd")
-                })
-                .ToListAsync();
-
-            return Ok(expiringSoonBatches);
-        }
-
-        // GET: api/Warehouses/current
-        [HttpGet("currentWarehouse")]
-        public async Task<ActionResult> GetCurrentWarehouse()
-        {
-            var currentUserRole = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
-            if (currentUserRole != "0") // Si no es administrador
-            {
-                var currentWarehouseId = User.Claims.FirstOrDefault(c => c.Type == "WarehouseId")?.Value;
-                if (string.IsNullOrEmpty(currentWarehouseId))
-                {
-                    return NotFound("No se encontró el almacén para este usuario.");
-                }
-
-                var warehouse = await _context.Warehouses
-                    .Where(w => w.WarehouseId == int.Parse(currentWarehouseId) && w.IsDeleted == "0")
-                    .Select(w => new { w.WarehouseId, w.NameWarehouse })
-                    .FirstOrDefaultAsync();
-
-                if (warehouse == null)
-                {
-                    return NotFound("El almacén no existe o está eliminado.");
-                }
-
-                return Ok(warehouse);
-            }
-
-            // Si es administrador, retorna todos los almacenes
-            var warehouses = await _context.Warehouses
-                .Where(w => w.IsDeleted == "0")
-                .Select(w => new { w.WarehouseId, w.NameWarehouse })
-                .ToListAsync();
-
-            return Ok(warehouses);
-        }
-
-        // GET: api/Batches/checkBatchCode/{batchCode}
-        [HttpGet("checkBatchCode/{batchCode}")]
-        public async Task<IActionResult> CheckBatchCodeExists(string batchCode)
-        {
-            var exists = await _context.Batches.AnyAsync(b => b.BatchCode == batchCode && b.IsDeleted == "0");
-            return Ok(new { exists });
-        }
-
-        //GET /api/Batches/searchByBatchCode/{batchCode}
-        [HttpGet("searchByBatchCode/{batchCode}")]
-        public async Task<IActionResult> GetBatchByCode(string batchCode)
-        {
-            var batch = await _context.Batches
-                .Include(b => b.MedicationHandlingUnit)
-                    .ThenInclude(mhu => mhu.Medication)
-                .Include(b => b.MedicationHandlingUnit)
-                    .ThenInclude(mhu => mhu.HandlingUnit)
-                .Include(b => b.MedicationHandlingUnit)
-                    .ThenInclude(mhu => mhu.Shelf)
-                .Include(b => b.Supplier)
-                .FirstOrDefaultAsync(b => b.BatchCode == batchCode && b.IsDeleted == "0");
-
-            if (batch == null)
-            {
-                return NotFound(new { success = false, message = "Lote no encontrado." });
-            }
-
-            var shelf = batch.MedicationHandlingUnit.Shelf;
-            var warehouse = await _context.Warehouses
-                .FirstOrDefaultAsync(w => w.WarehouseId == shelf.WarehouseId);
-
-            return Ok(new
-            {
-                batch.BatchId,
-                batch.BatchCode,
-                batch.InitialQuantity,
-                batch.CurrentQuantity,
-                batch.MinimumStock,
-                batch.unitPrice,
-                batch.UnitPriceBonus,
-                MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine,
-                Concentration = batch.MedicationHandlingUnit.Concentration,
-                UnitMeasure = batch.MedicationHandlingUnit.HandlingUnit.NameUnit,
-                WarehouseName = warehouse?.NameWarehouse ?? "N/A",
-                ShelfName = shelf?.NameShelf ?? "N/A",
-                SupplierName = batch.Supplier?.NameSupplier ?? "N/A"
-            });
-        }
-
-        //POST /api/Batches/bonusEntry
+        // POST: api/Batches/bonusEntry
+        // Agrega una entrada de bonificación a un lote existente y registra el movimiento correspondiente.
         [HttpPost("bonusEntry")]
         public async Task<IActionResult> AddBonusEntry([FromBody] BonusEntryDTO bonusEntry)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // Buscar el lote por código ----- Entrada por bonificacion
                 var batch = await _context.Batches.FirstOrDefaultAsync(b => b.BatchCode == bonusEntry.BatchCode && b.IsDeleted == "0");
 
                 if (batch == null)
@@ -615,7 +535,6 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     return NotFound("Lote no encontrado.");
                 }
 
-                // Buscar el tipo de movimiento por su nombre
                 var typeOfMovement = await _context.TypeOfMovements
                     .FirstOrDefaultAsync(t => t.NameOfMovement == bonusEntry.NameOfMovement);
 
@@ -624,11 +543,9 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     return BadRequest("El tipo de movimiento proporcionado no existe.");
                 }
 
-                // Actualizar las cantidades del lote
                 batch.CurrentQuantity += bonusEntry.BonusQuantity;
                 batch.InitialQuantity += bonusEntry.BonusQuantity;
 
-                // Si tiene precio unitario de bonificación, actualizarlo
                 if (bonusEntry.UnitPriceBonus.HasValue)
                 {
                     batch.UnitPriceBonus = bonusEntry.UnitPriceBonus;
@@ -636,7 +553,6 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
                 _context.Batches.Update(batch);
 
-                // Crear un registro en la tabla de movimientos
                 var movement = new Movement
                 {
                     BatchId = batch.BatchId,
@@ -650,20 +566,113 @@ namespace API_GestionAlmacenMedicamentos.Controllers
 
                 _context.Movements.Add(movement);
 
-                // Guardar cambios
                 await _context.SaveChangesAsync();
-
-                // Confirmar la transacción
                 await transaction.CommitAsync();
 
                 return Ok(new { success = true, message = "Bonificación registrada exitosamente." });
             }
             catch (Exception ex)
             {
-                // Revertir la transacción si hay errores
                 await transaction.RollbackAsync();
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
+
+        #endregion
+
+
+        #region Métodos DELETE y RESTORE
+
+        // DELETE: api/Batches/5
+        // Realiza una eliminación lógica de un lote y sus movimientos asociados.
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteBatch(int id)
+        {
+            try
+            {
+                var batch = await _context.Batches
+                    .Include(b => b.MedicationHandlingUnit)
+                        .ThenInclude(mhu => mhu.Shelf)
+                    .FirstOrDefaultAsync(b => b.BatchId == id && b.IsDeleted == "0");
+
+                if (batch == null)
+                {
+                    return NotFound(new { success = false, message = "Lote no encontrado." });
+                }
+
+                if (GetCurrentUserRole() != "0" && batch.MedicationHandlingUnit.Shelf.WarehouseId != GetCurrentWarehouseId())
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Acceso denegado: no tiene permisos para este almacén." });
+                }
+
+                var movements = await _context.Movements
+                    .Where(m => m.BatchId == batch.BatchId && m.IsDeleted == "0")
+                    .ToListAsync();
+
+                foreach (var movement in movements)
+                {
+                    movement.IsDeleted = "1";
+                    movement.UpdatedAt = DateTime.UtcNow;
+                }
+
+                batch.IsDeleted = "1";
+                batch.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Error al eliminar el lote: {ex.Message}" });
+            }
+        }
+
+        // RESTORE: api/Batches/restore/5
+        // Restaura un lote previamente eliminado junto con sus movimientos asociados.
+        [HttpPost("restore/{id}")]
+        public async Task<IActionResult> RestoreBatch(int id)
+        {
+            try
+            {
+                var batch = await _context.Batches
+                    .Include(b => b.MedicationHandlingUnit)
+                        .ThenInclude(mhu => mhu.Shelf)
+                    .FirstOrDefaultAsync(b => b.BatchId == id && b.IsDeleted == "1");
+
+                if (batch == null)
+                {
+                    return NotFound(new { success = false, message = "Lote no encontrado o ya está activo." });
+                }
+
+                if (GetCurrentUserRole() != "0" && batch.MedicationHandlingUnit.Shelf.WarehouseId != GetCurrentWarehouseId())
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Acceso denegado: no tiene permisos para este almacén." });
+                }
+
+                batch.IsDeleted = "0";
+                batch.UpdatedAt = DateTime.UtcNow;
+
+                var movements = await _context.Movements
+                    .Where(m => m.BatchId == batch.BatchId && m.IsDeleted == "1")
+                    .ToListAsync();
+
+                foreach (var movement in movements)
+                {
+                    movement.IsDeleted = "0";
+                    movement.UpdatedAt = DateTime.UtcNow;
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Lote y movimientos asociados restablecidos correctamente." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Error al restablecer el lote: {ex.Message}" });
+            }
+        }
+
+        #endregion
     }
 }
