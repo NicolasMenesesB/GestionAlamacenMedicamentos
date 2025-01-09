@@ -19,6 +19,8 @@ public partial class DbGestionAlmacenMedicamentosContext : DbContext
     public virtual DbSet<Alert> Alerts { get; set; }
 
     public virtual DbSet<Batch> Batches { get; set; }
+    
+    public virtual DbSet<Bonus> Bonuses { get; set; } = null!;
 
     public virtual DbSet<DetailMedicationHandlingUnit> DetailMedicationHandlingUnits { get; set; }
 
@@ -76,33 +78,80 @@ public partial class DbGestionAlmacenMedicamentosContext : DbContext
             entity.ToTable("Batch");
 
             entity.Property(e => e.BatchId).HasColumnName("batch_ID");
+
             entity.Property(e => e.BatchCode)
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("batchCode");
+
+            entity.Property(e => e.FabricationDate)
+                .HasColumnType("date")
+                .HasColumnName("fabricationDate");
+
+            entity.Property(e => e.ExpirationDate)
+                .HasColumnType("date")
+                .HasColumnName("expirationDate");
+
+            entity.Property(e => e.InitialQuantity).HasColumnName("initialQuantity");
+            entity.Property(e => e.CurrentQuantity).HasColumnName("currentQuantity");
+            entity.Property(e => e.MinimumStock).HasColumnName("minimumStock");
+
+            entity.Property(e => e.unitPrice)
+                .HasColumnName("unitPrice")
+                .HasColumnType("decimal(18, 2)");
+
+            entity.Property(e => e.MedicationHandlingUnitId).HasColumnName("medication_HandlingUnit_ID");
+            entity.Property(e => e.SupplierId).HasColumnName("supplier_ID");
+
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
                 .HasColumnName("created_at");
+
             entity.Property(e => e.CreatedBy).HasColumnName("created_by");
-            entity.Property(e => e.CurrentQuantity).HasColumnName("currentQuantity");
-            entity.Property(e => e.ExpirationDate).HasColumnName("expirationDate");
-            entity.Property(e => e.FabricationDate).HasColumnName("fabricationDate");
-            entity.Property(e => e.InitialQuantity).HasColumnName("initialQuantity");
-            entity.Property(e => e.MinimumStock).HasColumnName("minimumStock");
+
+            entity.Property(e => e.UpdatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("updated_at");
+
+            entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+
             entity.Property(e => e.IsDeleted)
                 .HasMaxLength(1)
                 .IsUnicode(false)
                 .HasDefaultValueSql("((0))")
                 .IsFixedLength()
                 .HasColumnName("is_deleted");
-            entity.Property(e => e.MedicationHandlingUnitId).HasColumnName("medication_HandlingUnit_ID");
-            entity.Property(e => e.SupplierId).HasColumnName("supplier_ID");
-            entity.Property(e => e.UpdatedAt)
+        });
+
+        modelBuilder.Entity<Bonus>(entity =>
+        {
+            entity.ToTable("Bonuses");
+
+            entity.HasKey(e => e.BonusesId); 
+
+            entity.Property(e => e.BonusesId).HasColumnName("bonuses_ID");
+            entity.Property(e => e.BatchId).HasColumnName("batch_ID");
+            entity.Property(e => e.BonusAmount).HasColumnName("bonusAmount");
+            entity.Property(e => e.BonusPrice) 
+                .HasColumnType("decimal(18, 2)")
+                .HasColumnName("bonusPrice");
+            entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime")
+                .HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("datetime")
                 .HasColumnName("updated_at");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
             entity.Property(e => e.UpdatedBy).HasColumnName("updated_by");
+            entity.Property(e => e.IsDeleted)
+                .HasMaxLength(1)
+                .IsUnicode(false)
+                .HasDefaultValueSql("((0))")
+                .IsFixedLength()
+                .HasColumnName("is_deleted");
         });
 
         modelBuilder.Entity<DetailMedicationHandlingUnit>(entity =>

@@ -88,7 +88,6 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     CurrentQuantity = batch.CurrentQuantity,
                     MinimumStock = batch.MinimumStock,
                     unitPrice = batch.unitPrice,
-                    UnitPriceBonus = batch.UnitPriceBonus,
                     MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine,
                     Concentration = batch.MedicationHandlingUnit.Concentration,
                     UnitMeasure = batch.MedicationHandlingUnit.HandlingUnit.NameUnit,
@@ -152,7 +151,6 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     CurrentQuantity = batch.CurrentQuantity,
                     MinimumStock = batch.MinimumStock,
                     unitPrice = batch.unitPrice,
-                    UnitPriceBonus = batch.UnitPriceBonus,
                     MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine ?? "Sin Medicamento Asociado",
                     Concentration = batch.MedicationHandlingUnit.Concentration ?? "N/A",
                     UnitMeasure = batch.MedicationHandlingUnit.HandlingUnit?.NameUnit ?? "N/A",
@@ -257,7 +255,6 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 batch.CurrentQuantity,
                 batch.MinimumStock,
                 batch.unitPrice,
-                batch.UnitPriceBonus,
                 MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine,
                 Concentration = batch.MedicationHandlingUnit.Concentration,
                 UnitMeasure = batch.MedicationHandlingUnit.HandlingUnit.NameUnit,
@@ -370,6 +367,22 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     _context.MedicationHandlingUnits.Add(medicationHandlingUnit);
                     await _context.SaveChangesAsync();
 
+                    // Crear registro en Detail_Medication_HandlingUnit
+                    var detail = new DetailMedicationHandlingUnit
+                    {
+                        DetailMedicationHandlingUnitId = medicationHandlingUnit.MedicationHandlingUnitId,
+                        StorageColdChain = createDTO.StorageColdChain,
+                        PhotoSensitiveStorage = createDTO.PhotoSensitiveStorage,
+                        Controlled = createDTO.Controlled,
+                        Oncological = createDTO.Oncological,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = GetCurrentUserId(),
+                        IsDeleted = "0"
+                    };
+
+                    _context.DetailMedicationHandlingUnits.Add(detail);
+                    await _context.SaveChangesAsync();
+
                     var batch = new Batch
                     {
                         BatchCode = createDTO.BatchCode,
@@ -468,6 +481,22 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     _context.MedicationHandlingUnits.Add(medicationHandlingUnit);
                     await _context.SaveChangesAsync();
 
+                    // Crear registro en Detail_Medication_HandlingUnit
+                    var detail = new DetailMedicationHandlingUnit
+                    {
+                        DetailMedicationHandlingUnitId = medicationHandlingUnit.MedicationHandlingUnitId,
+                        StorageColdChain = createDTO.StorageColdChain,
+                        PhotoSensitiveStorage = createDTO.PhotoSensitiveStorage,
+                        Controlled = createDTO.Controlled,
+                        Oncological = createDTO.Oncological,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = GetCurrentUserId(),
+                        IsDeleted = "0"
+                    };
+
+                    _context.DetailMedicationHandlingUnits.Add(detail);
+                    await _context.SaveChangesAsync();
+
                     var batch = new Batch
                     {
                         BatchCode = createDTO.BatchCode,
@@ -520,61 +549,88 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
-        // POST: api/Batches/bonusEntry
-        // Agrega una entrada de bonificación a un lote existente y registra el movimiento correspondiente.
-        [HttpPost("bonusEntry")]
-        public async Task<IActionResult> AddBonusEntry([FromBody] BonusEntryDTO bonusEntry)
+        #endregion
+
+
+        #region Métodos PUT
+
+        // PUT: api/Batches/5
+        // Actualiza un lote existente con todos los datos proporcionados.
+        [HttpPut("update/{id}")]
+        public async Task<IActionResult> UpdateBatch(int id, [FromBody] UpdateBatchDTO updateBatchDTO)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             try
             {
-                var batch = await _context.Batches.FirstOrDefaultAsync(b => b.BatchCode == bonusEntry.BatchCode && b.IsDeleted == "0");
+                var batch = await _context.Batches
+                    .Include(b => b.MedicationHandlingUnit)
+                        .ThenInclude(mhu => mhu.Shelf)
+                    .Include(b => b.Supplier)
+                    .FirstOrDefaultAsync(b => b.BatchId == id && b.IsDeleted == "0");
 
                 if (batch == null)
                 {
                     return NotFound("Lote no encontrado.");
                 }
 
-                var typeOfMovement = await _context.TypeOfMovements
-                    .FirstOrDefaultAsync(t => t.NameOfMovement == bonusEntry.NameOfMovement);
-
-                if (typeOfMovement == null)
+                if (GetCurrentUserRole() != "0" && batch.MedicationHandlingUnit.Shelf.WarehouseId != GetCurrentWarehouseId())
                 {
-                    return BadRequest("El tipo de movimiento proporcionado no existe.");
+                    return Forbid("Acceso denegado: no tiene permisos para este almacén.");
                 }
 
-                batch.CurrentQuantity += bonusEntry.BonusQuantity;
-                batch.InitialQuantity += bonusEntry.BonusQuantity;
+                // Actualizar las propiedades del lote
+                batch.BatchCode = updateBatchDTO.BatchCode;
+                batch.FabricationDate = DateOnly.Parse(updateBatchDTO.FabricationDate);
+                batch.ExpirationDate = DateOnly.Parse(updateBatchDTO.ExpirationDate);
+                batch.InitialQuantity = updateBatchDTO.InitialQuantity;
+                batch.CurrentQuantity = updateBatchDTO.CurrentQuantity;
+                batch.MinimumStock = updateBatchDTO.MinimumStock;
+                batch.unitPrice = updateBatchDTO.unitPrice;
 
-                if (bonusEntry.UnitPriceBonus.HasValue)
+                // Actualizar relaciones con medicamento, unidad de manejo, estante y proveedor
+                var medicationHandlingUnit = await _context.MedicationHandlingUnits
+                    .Include(mhu => mhu.Medication)
+                    .Include(mhu => mhu.HandlingUnit)
+                    .Include(mhu => mhu.Shelf)
+                    .FirstOrDefaultAsync(mhu => mhu.Medication.NameMedicine == updateBatchDTO.MedicationName &&
+                                                mhu.Concentration == updateBatchDTO.Concentration &&
+                                                mhu.HandlingUnit.NameUnit == updateBatchDTO.UnitMeasure &&
+                                                mhu.Shelf.NameShelf == updateBatchDTO.ShelfName);
+
+                if (medicationHandlingUnit == null)
                 {
-                    batch.UnitPriceBonus = bonusEntry.UnitPriceBonus;
+                    return BadRequest("La unidad de manejo proporcionada no existe.");
                 }
 
-                _context.Batches.Update(batch);
+                batch.MedicationHandlingUnitId = medicationHandlingUnit.MedicationHandlingUnitId;
 
-                var movement = new Movement
+                var supplier = await _context.Suppliers
+                    .FirstOrDefaultAsync(s => s.NameSupplier == updateBatchDTO.SupplierName);
+
+                if (supplier == null)
                 {
-                    BatchId = batch.BatchId,
-                    TypeOfMovementId = typeOfMovement.TypeOfMovementId,
-                    Quantity = bonusEntry.BonusQuantity,
-                    DateOfMoviment = DateOnly.FromDateTime(DateTime.UtcNow),
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedBy = GetCurrentUserId(),
-                    IsDeleted = "0"
-                };
+                    return BadRequest("El proveedor proporcionado no existe.");
+                }
 
-                _context.Movements.Add(movement);
+                batch.SupplierId = supplier.SupplierId;
 
+                // Registrar los campos de auditoría
+                batch.UpdatedAt = DateTime.UtcNow;
+                batch.UpdatedBy = GetCurrentUserId();
+
+                // Guardar los cambios
+                _context.Entry(batch).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
 
-                return Ok(new { success = true, message = "Bonificación registrada exitosamente." });
+                return NoContent();
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
-                return StatusCode(500, new { success = false, message = ex.Message });
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error al actualizar el lote: {ex.Message}");
             }
         }
 

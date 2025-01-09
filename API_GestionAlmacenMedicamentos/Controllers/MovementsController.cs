@@ -10,6 +10,7 @@ using API_GestionAlmacenMedicamentos.Models;
 using API_GestionAlmacenMedicamentos.DTOs.MovementDTOs;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using API_GestionAlmacenMedicamentos.DTOs.Batch;
 
 namespace API_GestionAlmacenMedicamentos.Controllers
 {
@@ -25,23 +26,35 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             _context = context;
         }
 
+
+        #region Métodos Auxiliares
+
+        // Obtiene el ID del usuario actual a partir de los claims.
         private int GetCurrentUserId()
         {
             return int.Parse(User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? "0");
         }
 
+        // Obtiene el rol del usuario actual a partir de los claims.
         private string GetCurrentUserRole()
         {
             return User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value ?? string.Empty;
         }
 
+        // Obtiene el ID del almacén asociado al usuario actual a partir de los claims.
         private int? GetCurrentWarehouseId()
         {
             var warehouseId = User.Claims.FirstOrDefault(c => c.Type == "WarehouseId")?.Value;
             return string.IsNullOrEmpty(warehouseId) ? null : int.Parse(warehouseId);
         }
 
+        #endregion
+
+
+        #region Métodos GET
+
         // GET: api/Movements
+        // Obtiene una lista de movimientos. Opcionalmente, filtra por nombre de tipo de movimiento.
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MovementDTO>>> GetMovements([FromQuery] string? nameOfMovement = null)
         {
@@ -72,6 +85,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
         }
 
         // GET: api/Movements/5
+        // Obtiene los detalles de un movimiento específico basado en su ID.
         [HttpGet("{id}")]
         public async Task<ActionResult<MovementDTO>> GetMovement(int id)
         {
@@ -111,7 +125,42 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
+        // GET: api/Movements/deleted
+        // Obtiene una lista de movimientos eliminados lógicamente.
+        [HttpGet("deleted")]
+        public async Task<ActionResult<IEnumerable<MovementDTO>>> GetDeletedMovements()
+        {
+            try
+            {
+                var deletedMovements = await _context.Movements
+                    .Include(m => m.TypeOfMovement)
+                    .Include(m => m.Batch)
+                    .Where(m => m.IsDeleted == "1")
+                    .Select(movement => new MovementDTO
+                    {
+                        MovementId = movement.MovementId,
+                        Quantity = movement.Quantity,
+                        DateOfMoviment = movement.DateOfMoviment.ToString("yyyy-MM-dd"),
+                        NameOfMovement = movement.TypeOfMovement.NameOfMovement,
+                        BatchCode = movement.Batch.BatchCode
+                    })
+                    .ToListAsync();
+
+                return Ok(deletedMovements);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Error al obtener los movimientos eliminados: {ex.Message}" });
+            }
+        }
+
+        #endregion
+
+
+        #region Métodos POST
+
         // POST: api/Movements
+        // Crea un nuevo movimiento asociado a un lote y actualiza la cantidad del lote.
         [HttpPost]
         public async Task<ActionResult<MovementDTO>> PostMovement([FromBody] CreateMovementDTO createMovementDTO)
         {
@@ -192,7 +241,13 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
+        #endregion
+
+
+        #region Métodos PUT
+
         // PUT: api/Movements/5
+        // Actualiza un movimiento existente y ajusta la cantidad del lote correspondiente.
         [HttpPut("{id}")]
         public async Task<IActionResult> PutMovement(int id, [FromBody] UpdateMovementDTO updateMovementDTO)
         {
@@ -276,33 +331,35 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
+        #endregion
+
+
+        #region Métodos DELETE y RESTORE
+
         // DELETE: api/Movements/5
+        // Elimina lógicamente un movimiento y ajusta la cantidad del lote correspondiente.
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteMovement(int id)
         {
             try
             {
-                // Buscar el movimiento junto con el lote y otros datos relacionados
                 var movement = await _context.Movements
                     .Include(m => m.Batch)
                         .ThenInclude(b => b.MedicationHandlingUnit)
                             .ThenInclude(mhu => mhu.Shelf)
-                    .Include(m => m.TypeOfMovement) // Asegúrate de incluir la relación con TypeOfMovement
+                    .Include(m => m.TypeOfMovement)
                     .FirstOrDefaultAsync(m => m.MovementId == id && m.IsDeleted == "0");
 
                 if (movement == null)
                 {
-                    // Devolver un resultado en formato JSON
                     return NotFound(new { success = false, message = "Movimiento no encontrado." });
                 }
 
-                // Verificar si el usuario tiene permisos para acceder al almacén
                 if (GetCurrentUserRole() != "0" && movement.Batch.MedicationHandlingUnit.Shelf.WarehouseId != GetCurrentWarehouseId())
                 {
                     return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Acceso denegado: no tiene permisos para este almacén." });
                 }
 
-                // Actualizar la cantidad actual del lote en función del tipo de movimiento
                 if (movement.TypeOfMovement?.NameOfMovement?.StartsWith("Salida") == true)
                 {
                     movement.Batch.CurrentQuantity += movement.Quantity;
@@ -321,11 +378,9 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     return BadRequest(new { success = false, message = "El tipo de movimiento no es válido o no está definido." });
                 }
 
-                // Marcar el movimiento como eliminado lógicamente
                 movement.IsDeleted = "1";
                 movement.UpdatedAt = DateTime.UtcNow;
 
-                // Guardar los cambios en la base de datos
                 _context.Entry(movement).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
 
@@ -333,18 +388,17 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
             catch (Exception ex)
             {
-                // Manejar errores inesperados
                 return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Error al eliminar el movimiento: {ex.Message}" });
             }
         }
 
         // RESTORE: api/Movements/restore/5
+        // Restaura un movimiento eliminado lógicamente y ajusta la cantidad del lote.
         [HttpPost("restore/{id}")]
         public async Task<IActionResult> RestoreMovement(int id)
         {
             try
             {
-                // Buscar el movimiento eliminado junto con los datos necesarios
                 var movement = await _context.Movements
                     .Include(m => m.Batch)
                         .ThenInclude(b => b.MedicationHandlingUnit)
@@ -357,17 +411,14 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     return NotFound(new { success = false, message = "Movimiento no encontrado o ya está activo." });
                 }
 
-                // Verificar permisos del usuario
                 if (GetCurrentUserRole() != "0" && movement.Batch.MedicationHandlingUnit.Shelf.WarehouseId != GetCurrentWarehouseId())
                 {
                     return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Acceso denegado: no tiene permisos para este almacén." });
                 }
 
-                // Restablecer el movimiento
                 movement.IsDeleted = "0";
                 movement.UpdatedAt = DateTime.UtcNow;
 
-                // Ajustar la cantidad del lote según el tipo de movimiento
                 if (movement.TypeOfMovement.NameOfMovement.StartsWith("Salida"))
                 {
                     movement.Batch.CurrentQuantity -= movement.Quantity;
@@ -386,7 +437,6 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     return BadRequest(new { success = false, message = "El tipo de movimiento no es válido o no está definido." });
                 }
 
-                // Guardar los cambios en la base de datos
                 await _context.SaveChangesAsync();
 
                 return Ok(new { success = true, message = "Movimiento restaurado correctamente." });
@@ -397,33 +447,6 @@ namespace API_GestionAlmacenMedicamentos.Controllers
             }
         }
 
-        // GET: api/Movements/deleted
-        [HttpGet("deleted")]
-        public async Task<ActionResult<IEnumerable<MovementDTO>>> GetDeletedMovements()
-        {
-            try
-            {
-                var deletedMovements = await _context.Movements
-                    .Include(m => m.TypeOfMovement)
-                    .Include(m => m.Batch)
-                    .Where(m => m.IsDeleted == "1")
-                    .Select(movement => new MovementDTO
-                    {
-                        MovementId = movement.MovementId,
-                        Quantity = movement.Quantity,
-                        DateOfMoviment = movement.DateOfMoviment.ToString("yyyy-MM-dd"),
-                        NameOfMovement = movement.TypeOfMovement.NameOfMovement,
-                        BatchCode = movement.Batch.BatchCode
-                    })
-                    .ToListAsync();
-
-                return Ok(deletedMovements);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Error al obtener los movimientos eliminados: {ex.Message}" });
-            }
-        }
-
+        #endregion
     }
 }

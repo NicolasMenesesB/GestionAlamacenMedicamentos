@@ -36,6 +36,49 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 .ToListAsync();
         }
 
+        // GET: api/DetailMedicationHandlingUnits/batch/{batchId}
+        [HttpGet("batch/{batchId}")]
+        public async Task<IActionResult> GetDetailsByBatchId(int batchId)
+        {
+            try
+            {
+                var details = await _context.Batches
+                    .Where(b => b.BatchId == batchId && b.IsDeleted == "0")
+                    .Join(
+                        _context.MedicationHandlingUnits,
+                        batch => batch.MedicationHandlingUnitId,
+                        handlingUnit => handlingUnit.MedicationHandlingUnitId,
+                        (batch, handlingUnit) => new { batch, handlingUnit }
+                    )
+                    .Join(
+                        _context.DetailMedicationHandlingUnits,
+                        joined => joined.handlingUnit.MedicationHandlingUnitId,
+                        detail => detail.DetailMedicationHandlingUnitId,
+                        (joined, detail) => new
+                        {
+                            joined.batch.BatchId,
+                            detail.StorageColdChain,
+                            detail.PhotoSensitiveStorage,
+                            detail.Controlled,
+                            detail.Oncological
+                        }
+                    )
+                    .FirstOrDefaultAsync();
+
+                if (details == null)
+                {
+                    return NotFound(new { success = false, message = "No se encontraron detalles activos para este lote." });
+                }
+
+                return Ok(new { success = true, data = details });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = $"Error al recuperar los detalles: {ex.Message}" });
+            }
+        }
+
+
         // POST: api/DetailMedicationHandlingUnits
         [HttpPost]
         public async Task<ActionResult<DetailMedicationHandlingUnitDTO>> PostDetailMedicationHandlingUnit(CreateDetailMedicationHandlingUnitDTO createDTO)

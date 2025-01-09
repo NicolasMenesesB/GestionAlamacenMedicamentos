@@ -526,26 +526,37 @@
         }
       }
     },
-    "/api/Batches/bonusEntry": {
-      "post": {
+    "/api/Batches/update/{id}": {
+      "put": {
         "tags": [
           "Batches"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
         ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BonusEntryDTO"
+                "$ref": "#/components/schemas/UpdateBatchDTO"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/BonusEntryDTO"
+                "$ref": "#/components/schemas/UpdateBatchDTO"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/BonusEntryDTO"
+                "$ref": "#/components/schemas/UpdateBatchDTO"
               }
             }
           }
@@ -576,6 +587,133 @@
         "responses": {
           "200": {
             "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/Bonuses/{id}": {
+      "get": {
+        "tags": [
+          "Bonuses"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/BonusDTO"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BonusDTO"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BonusDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Bonuses": {
+      "get": {
+        "tags": [
+          "Bonuses"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BonusDTO"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BonusDTO"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BonusDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Bonuses/batch/{batchId}": {
+      "get": {
+        "tags": [
+          "Bonuses"
+        ],
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BonusDTO"
+                  }
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BonusDTO"
+                  }
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BonusDTO"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -660,6 +798,29 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/DetailMedicationHandlingUnits/batch/{batchId}": {
+      "get": {
+        "tags": [
+          "DetailMedicationHandlingUnits"
+        ],
+        "parameters": [
+          {
+            "name": "batchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
           }
         }
       }
@@ -1580,29 +1741,6 @@
         }
       }
     },
-    "/api/Movements/restore/{id}": {
-      "post": {
-        "tags": [
-          "Movements"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Success"
-          }
-        }
-      }
-    },
     "/api/Movements/deleted": {
       "get": {
         "tags": [
@@ -1637,6 +1775,29 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/Movements/restore/{id}": {
+      "post": {
+        "tags": [
+          "Movements"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
           }
         }
       }
@@ -3234,11 +3395,6 @@
             "type": "number",
             "format": "double"
           },
-          "unitPriceBonus": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
           "medicationHandlingUnitId": {
             "type": "integer",
             "format": "int32"
@@ -3359,25 +3515,24 @@
         },
         "additionalProperties": false
       },
-      "BonusEntryDTO": {
+      "BonusDTO": {
         "type": "object",
         "properties": {
-          "batchCode": {
-            "type": "string",
-            "nullable": true
-          },
-          "bonusQuantity": {
+          "bonusesId": {
             "type": "integer",
             "format": "int32"
           },
-          "unitPriceBonus": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
+          "batchId": {
+            "type": "integer",
+            "format": "int32"
           },
-          "nameOfMovement": {
-            "type": "string",
-            "nullable": true
+          "bonusAmount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bonusPrice": {
+            "type": "number",
+            "format": "double"
           }
         },
         "additionalProperties": false
@@ -4313,6 +4468,73 @@
             "nullable": true
           },
           "descriptionOfMovement": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateBatchDTO": {
+        "type": "object",
+        "properties": {
+          "batchId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "batchCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "fabricationDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "expirationDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "initialQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "currentQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minimumStock": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unitPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "unitPriceBonus": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "medicationName": {
+            "type": "string",
+            "nullable": true
+          },
+          "concentration": {
+            "type": "string",
+            "nullable": true
+          },
+          "unitMeasure": {
+            "type": "string",
+            "nullable": true
+          },
+          "shelfName": {
+            "type": "string",
+            "nullable": true
+          },
+          "warehouseName": {
+            "type": "string",
+            "nullable": true
+          },
+          "supplierName": {
             "type": "string",
             "nullable": true
           }
