@@ -124,6 +124,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     .Include(b => b.MedicationHandlingUnit)
                         .ThenInclude(mhu => mhu.Shelf)
                     .Include(b => b.Supplier)
+                    .Include(b => b.Bonuses) // Incluir los bonos asociados al lote
                     .Where(b => b.BatchId == id && b.IsDeleted == "0" &&
                                 (b.MedicationHandlingUnit.Shelf.WarehouseId == currentWarehouseId || GetCurrentUserRole() == "0"))
                     .FirstOrDefaultAsync();
@@ -141,6 +142,18 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     warehouseName = warehouse?.NameWarehouse ?? "N/A";
                 }
 
+                // Calcular cantidad inicial real
+                var totalBonusAmount = batch.Bonuses?.Sum(b => b.BonusAmount) ?? 0;
+                var realInitialQuantity = batch.InitialQuantity - totalBonusAmount;
+
+                // Calcular costo total de los bonos
+                var totalBonusCost = batch.Bonuses?.Sum(b => b.BonusAmount * b.BonusPrice) ?? 0;
+
+                // Calcular costo total del lote
+                var totalBatchCost = (realInitialQuantity * batch.unitPrice) + totalBonusCost;
+
+                var totalQuantityWithBonus = batch.InitialQuantity + totalBonusAmount;
+
                 var batchDTO = new BatchDTO
                 {
                     BatchId = batch.BatchId,
@@ -148,9 +161,13 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                     FabricationDate = batch.FabricationDate.ToString("yyyy-MM-dd"),
                     ExpirationDate = batch.ExpirationDate.ToString("yyyy-MM-dd"),
                     InitialQuantity = batch.InitialQuantity,
+                    RealInitialQuantity = realInitialQuantity, // Nueva cantidad inicial
                     CurrentQuantity = batch.CurrentQuantity,
                     MinimumStock = batch.MinimumStock,
                     unitPrice = batch.unitPrice,
+                    TotalBonusCost = totalBonusCost, // Nuevo: costo total de los bonos
+                    TotalBatchCost = totalBatchCost, // Nuevo: costo total del lote
+                    TotalQuantityWithBonus = totalQuantityWithBonus,
                     MedicationName = batch.MedicationHandlingUnit.Medication.NameMedicine ?? "Sin Medicamento Asociado",
                     Concentration = batch.MedicationHandlingUnit.Concentration ?? "N/A",
                     UnitMeasure = batch.MedicationHandlingUnit.HandlingUnit?.NameUnit ?? "N/A",
@@ -168,6 +185,7 @@ namespace API_GestionAlmacenMedicamentos.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, $"Error al obtener el lote: {ex.Message}");
             }
         }
+
 
         // GET: api/Batches/deleted
         // Obtiene una lista de lotes que han sido eliminados.

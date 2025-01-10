@@ -2,7 +2,7 @@
 {
     public class CreateBonusDTO
     {
-        public int BatchId { get; set; } 
+        public string BatchCode { get; set; }
         public int BonusAmount { get; set; } 
         public decimal BonusPrice { get; set; } 
     }

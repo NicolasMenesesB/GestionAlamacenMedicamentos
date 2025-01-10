@@ -7,10 +7,14 @@
         public string FabricationDate { get; set; } = null!;
         public string ExpirationDate { get; set; } = null!;
         public int InitialQuantity { get; set; }
+        public int RealInitialQuantity { get; set; }
         public int CurrentQuantity { get; set; }
         public int MinimumStock { get; set; }
         public decimal unitPrice { get; set; } // Precio unitario
         public decimal? UnitPriceBonus { get; set; } // Precio de bonificación
+        public decimal TotalBonusCost { get; set; }
+        public decimal TotalBatchCost { get; set; }
+        public int TotalQuantityWithBonus { get; set; }
         public decimal TotalPrice => InitialQuantity * unitPrice; // Calculado
         public string MedicationName { get; set; } = null!;
         public string Concentration { get; set; } = null!; // Nueva propiedad

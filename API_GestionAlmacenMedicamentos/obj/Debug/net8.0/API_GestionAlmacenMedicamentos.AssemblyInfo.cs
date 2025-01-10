@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("API_GestionAlmacenMedicamentos")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+53adc0fb60e2c4efd3aa24566169b8aa2890b7dc")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4dcb33c112bb7fc6f46b54c299fd02e92e4a57f1")]
 [assembly: System.Reflection.AssemblyProductAttribute("API_GestionAlmacenMedicamentos")]
 [assembly: System.Reflection.AssemblyTitleAttribute("API_GestionAlmacenMedicamentos")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

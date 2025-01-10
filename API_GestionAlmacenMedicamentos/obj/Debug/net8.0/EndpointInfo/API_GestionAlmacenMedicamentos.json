@@ -667,6 +667,35 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Bonuses"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBonusDTO"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBonusDTO"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBonusDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
       }
     },
     "/api/Bonuses/batch/{batchId}": {
@@ -3430,6 +3459,13 @@
           },
           "supplier": {
             "$ref": "#/components/schemas/Supplier"
+          },
+          "bonuses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Bonus"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -3457,6 +3493,10 @@
             "type": "integer",
             "format": "int32"
           },
+          "realInitialQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
           "currentQuantity": {
             "type": "integer",
             "format": "int32"
@@ -3473,6 +3513,18 @@
             "type": "number",
             "format": "double",
             "nullable": true
+          },
+          "totalBonusCost": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalBatchCost": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalQuantityWithBonus": {
+            "type": "integer",
+            "format": "int32"
           },
           "totalPrice": {
             "type": "number",
@@ -3515,6 +3567,53 @@
         },
         "additionalProperties": false
       },
+      "Bonus": {
+        "type": "object",
+        "properties": {
+          "bonusesId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bonusAmount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bonusPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "batchId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedBy": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "isDeleted": {
+            "type": "string",
+            "nullable": true
+          },
+          "batch": {
+            "$ref": "#/components/schemas/Batch"
+          }
+        },
+        "additionalProperties": false
+      },
       "BonusDTO": {
         "type": "object",
         "properties": {
@@ -3525,6 +3624,24 @@
           "batchId": {
             "type": "integer",
             "format": "int32"
+          },
+          "bonusAmount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bonusPrice": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateBonusDTO": {
+        "type": "object",
+        "properties": {
+          "batchCode": {
+            "type": "string",
+            "nullable": true
           },
           "bonusAmount": {
             "type": "integer",

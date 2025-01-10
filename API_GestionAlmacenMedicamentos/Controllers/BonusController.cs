@@ -125,5 +125,69 @@ namespace API_GestionAlmacenMedicamentos.Controllers
         }
 
         #endregion
+
+        #region Métodos POST
+
+        // POST: api/Bonuses
+        [HttpPost]
+        public async Task<IActionResult> CreateBonus([FromBody] CreateBonusDTO createBonusDTO)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Buscar el lote basado en el código
+                    var batch = await _context.Batches.FirstOrDefaultAsync(b => b.BatchCode == createBonusDTO.BatchCode && b.IsDeleted == "0");
+                    if (batch == null)
+                    {
+                        return NotFound(new { success = false, message = "Lote no encontrado o inactivo." });
+                    }
+
+                    // Crear el nuevo registro de bono
+                    var newBonus = new Bonus
+                    {
+                        BatchId = batch.BatchId, // Aquí usamos el ID encontrado
+                        BonusAmount = createBonusDTO.BonusAmount,
+                        BonusPrice = createBonusDTO.BonusPrice,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = GetCurrentUserId(),
+                        IsDeleted = "0"
+                    };
+
+                    _context.Bonuses.Add(newBonus);
+
+                    // Actualizar las cantidades del lote
+                    batch.InitialQuantity += createBonusDTO.BonusAmount;
+                    batch.CurrentQuantity += createBonusDTO.BonusAmount;
+                    batch.UpdatedAt = DateTime.UtcNow;
+                    batch.UpdatedBy = GetCurrentUserId();
+
+                    _context.Batches.Update(batch);
+
+                    // Guardar cambios
+                    await _context.SaveChangesAsync();
+
+                    // Confirmar transacción
+                    await transaction.CommitAsync();
+
+                    return CreatedAtAction(nameof(GetBonus), new { id = newBonus.BonusesId }, new { success = true, bonus = newBonus });
+                }
+                catch (Exception ex)
+                {
+                    // Revertir transacción en caso de error
+                    await transaction.RollbackAsync();
+                    return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = $"Error al crear el bono: {ex.Message}" });
+                }
+            }
+        }
+
+        #endregion
+
     }
 }
+

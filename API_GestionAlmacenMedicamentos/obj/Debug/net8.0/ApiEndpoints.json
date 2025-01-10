@@ -369,6 +369,22 @@
   },
   {
     "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.BonusesController",
+    "Method": "CreateBonus",
+    "RelativePath": "api/Bonuses",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "createBonusDTO",
+        "Type": "API_GestionAlmacenMedicamentos.DTOs.Bonus.CreateBonusDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API_GestionAlmacenMedicamentos.Controllers.BonusesController",
     "Method": "GetBonus",
     "RelativePath": "api/Bonuses/{id}",
     "HttpMethod": "GET",

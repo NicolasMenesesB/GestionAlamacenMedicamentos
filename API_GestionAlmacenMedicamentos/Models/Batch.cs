@@ -38,4 +38,6 @@ public partial class Batch
     public virtual MedicationHandlingUnit MedicationHandlingUnit { get; set; } = null!;
 
     public virtual Supplier Supplier { get; set; } = null!;
+
+    public virtual ICollection<Bonus> Bonuses { get; set; } = new HashSet<Bonus>();
 }
